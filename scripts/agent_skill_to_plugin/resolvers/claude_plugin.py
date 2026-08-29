@@ -748,6 +748,12 @@ class ClaudePluginResolver:
         source_base: Path,
         timeout: int,
     ) -> tuple[ResolvedSource, str]:
+        # Temporary-directory spellings can be aliases of the same location
+        # (`/var` -> `/private/var` on macOS and 8.3 names on Windows).
+        # Keep every containment and relative-path calculation in one
+        # canonical namespace.
+        marketplace_snapshot = marketplace_snapshot.resolve()
+        marketplace_manifest = marketplace_manifest.resolve()
         if plugin_source.kind == "relative":
             marketplace_root = marketplace_manifest.parent.parent
             relative = _relative_path(plugin_source.value)

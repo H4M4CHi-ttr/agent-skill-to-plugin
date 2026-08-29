@@ -132,7 +132,9 @@ def _resolve_npx_prefix(which: Callable[[str], str | None] = shutil.which) -> li
     for cli_path in possible_cli_paths:
         if cli_path.is_file():
             # Running the JS entrypoint avoids implicit cmd.exe evaluation.
-            return [node_path, str(cli_path)]
+            # Resolve both paths so Windows 8.3 aliases cannot leave argv with
+            # a mixture of short and long path spellings.
+            return [str(Path(node_path).resolve()), str(cli_path.resolve())]
     raise SkillToPluginError(
         "Could not locate `npx-cli.js` for the Windows npx launcher.",
         code="dependency_missing",

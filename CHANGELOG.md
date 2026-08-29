@@ -4,7 +4,9 @@ All notable changes to Agent Skill to Plugin are documented here. The project fo
 
 ## [Unreleased]
 
-No changes yet.
+### Fixed
+
+- Canonicalized temporary Marketplace and Windows npx launcher paths so macOS `/var` aliases and Windows 8.3 path spellings behave consistently.
 
 ## [0.5.0] - 2026-08-29
 

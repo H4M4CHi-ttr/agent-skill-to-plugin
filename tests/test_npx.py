@@ -75,7 +75,10 @@ class NpxFetcherIsolationTests(unittest.TestCase):
             self.assertEqual(subprocess.DEVNULL, kwargs["stdin"])
             self.assertIs(False, kwargs["check"])
             self.assertFalse(sentinel.exists())
-            self.assertEqual((destination / ".agents" / "skills" / "example",), result.installed_skill_dirs)
+            self.assertEqual(
+                (destination.resolve() / ".agents" / "skills" / "example",),
+                result.installed_skill_dirs,
+            )
 
             env = kwargs["env"]
             self.assertIsInstance(env, dict)
@@ -115,7 +118,7 @@ class NpxFetcherIsolationTests(unittest.TestCase):
                 path.write_text("fixture", encoding="utf-8")
             values = {"npx.cmd": str(npx_cmd), "node.exe": str(node)}
             prefix = _resolve_npx_prefix(values.get)
-            self.assertEqual([str(node), str(cli)], prefix)
+            self.assertEqual([str(node.resolve()), str(cli.resolve())], prefix)
 
 
 if __name__ == "__main__":

@@ -15,7 +15,7 @@ sys.path.insert(0, str(PROJECT_ROOT / "scripts"))
 
 from agent_skill_to_plugin.discovery import discover_skills
 from agent_skill_to_plugin.errors import NeedsInputError, SkillToPluginError
-from agent_skill_to_plugin.models import ParsedInput, ResolvedSource
+from agent_skill_to_plugin.models import ParsedInput, PluginSource, ResolvedSource
 from agent_skill_to_plugin.resolvers.claude_plugin import (
     ClaudePluginResolver,
     KNOWN_MARKETPLACES,
@@ -126,6 +126,37 @@ class ClaudePluginResolverTests(unittest.TestCase):
             self.assertFalse((Path(resolved.snapshot_path) / ".env").exists())
             candidates = discover_skills(resolved, plugin_scope=True)
             self.assertEqual(["alpha", "beta"], [candidate.name for candidate in candidates])
+
+    def test_relative_plugin_uses_canonical_marketplace_alias(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            marketplace = root / "marketplace"
+            plugin = marketplace / "plugins" / "demo"
+            manifest = marketplace / ".claude-plugin" / "marketplace.json"
+            plugin.mkdir(parents=True)
+            manifest.parent.mkdir(parents=True)
+            manifest.write_text('{"name":"fixture","plugins":[]}', encoding="utf-8")
+            (plugin / "SKILL.md").write_text(
+                "---\nname: demo\ndescription: Canonical path fixture.\n---\nBody.\n",
+                encoding="utf-8",
+            )
+            alias = root / "marketplace-alias"
+            try:
+                alias.symlink_to(marketplace, target_is_directory=True)
+            except OSError as exc:
+                self.skipTest(f"directory symlinks are unavailable: {exc}")
+
+            resolved, plugin_root = ClaudePluginResolver._acquire_plugin(
+                PluginSource(kind="relative", value="./plugins/demo"),
+                root / "snapshot",
+                marketplace_snapshot=alias,
+                marketplace_manifest=alias / ".claude-plugin" / "marketplace.json",
+                source_base=root,
+                timeout=30,
+            )
+
+            self.assertEqual("plugins/demo", plugin_root)
+            self.assertTrue((Path(resolved.snapshot_path) / "plugins/demo/SKILL.md").is_file())
 
     def test_relative_source_resolves_plugin_boundary_and_selects_all_skills(self) -> None:
         source = FIXTURES / "claude-marketplace-relative"
