@@ -25,10 +25,10 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/H4M4CHi-ttr/skills"
-Repository = "https://github.com/H4M4CHi-ttr/skills"
-Issues = "https://github.com/H4M4CHi-ttr/skills/issues"
-Changelog = "https://github.com/H4M4CHi-ttr/skills/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/H4M4CHi-ttr/agent-skill-to-plugin"
+Repository = "https://github.com/H4M4CHi-ttr/agent-skill-to-plugin"
+Issues = "https://github.com/H4M4CHi-ttr/agent-skill-to-plugin/issues"
+Changelog = "https://github.com/H4M4CHi-ttr/agent-skill-to-plugin/blob/main/CHANGELOG.md"
 
 [project.scripts]
 agent-skill-to-plugin = "agent_skill_to_plugin.cli:main"
