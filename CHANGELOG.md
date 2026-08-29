@@ -38,6 +38,7 @@ No changes yet.
 - Adopted **Agent Skill to Plugin** / `agent-skill-to-plugin` as the public identity to reflect source types beyond npx, align the display, package, CLI, import, and Skill names, and avoid collision with an existing Agent Skill Porter project.
 - Pinned GitHub Actions to immutable commit SHAs for the initial public release.
 - Added cross-platform wheel installation checks and repository-wide LF normalization for reproducible release inputs.
+- Kept an explicit local Claude Marketplace directory as the snapshot boundary instead of widening it to an enclosing Git repository.
 - Split the unpublished approximately 1,400-line prototype script into focused modules. `scripts/pluginize.py` remains as a compatibility wrapper.
 - Reset the version from the prototype's unpublished `1.0.0` label to `0.5.0`. No public stable release was downgraded; the 0.x version communicates that resolver coverage and integration contracts are still beta.
 

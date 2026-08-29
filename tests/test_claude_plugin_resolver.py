@@ -102,6 +102,31 @@ class ClaudePluginResolverTests(unittest.TestCase):
             self.assertEqual("local_skill", result.kind)
             self.assertEqual(str(local.resolve()), result.normalized_source)
 
+    def test_local_marketplace_does_not_expand_to_enclosing_git_repository(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            repository = root / "repository"
+            marketplace = repository / "marketplace"
+            shutil.copytree(FIXTURES / "claude-marketplace-relative", marketplace)
+            (repository / ".env").write_text("SHOULD_NOT_BE_COPIED=1", encoding="utf-8")
+            parsed = claude_input("fixture-marketplace", "demo-relative", str(marketplace))
+
+            with mock.patch(
+                "agent_skill_to_plugin.resolvers.local.LocalResolver._git_metadata",
+                return_value=("a" * 40, False, repository),
+            ):
+                resolved = ClaudePluginResolver().resolve(
+                    parsed,
+                    root / "snapshot",
+                    root,
+                    30,
+                )
+
+            self.assertEqual("claude_plugin", resolved.kind)
+            self.assertFalse((Path(resolved.snapshot_path) / ".env").exists())
+            candidates = discover_skills(resolved, plugin_scope=True)
+            self.assertEqual(["alpha", "beta"], [candidate.name for candidate in candidates])
+
     def test_relative_source_resolves_plugin_boundary_and_selects_all_skills(self) -> None:
         source = FIXTURES / "claude-marketplace-relative"
         parsed = claude_input("fixture-marketplace", "demo-relative", str(source))

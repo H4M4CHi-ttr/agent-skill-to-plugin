@@ -603,7 +603,13 @@ class ClaudePluginResolver:
             if local.is_file() and _is_archive_source(local.name):
                 parsed = ParsedInput(kind="local_archive", raw_input=source, normalized_input=source, source=str(local))
                 return ArchiveResolver(HttpFetcher(timeout_seconds=timeout)).resolve(parsed, destination, source_base=source_base)
-            parsed = ParsedInput(kind="local", raw_input=source, normalized_input=source, source=str(local))
+            parsed = ParsedInput(
+                kind="local",
+                raw_input=source,
+                normalized_input=source,
+                source=str(local),
+                metadata={"snapshot_exact_root": True},
+            )
             return LocalResolver().resolve(parsed, destination, source_base=source_base)
 
         if lowered.startswith("https://") and urllib.parse.urlsplit(source).path.casefold().endswith("marketplace.json"):
