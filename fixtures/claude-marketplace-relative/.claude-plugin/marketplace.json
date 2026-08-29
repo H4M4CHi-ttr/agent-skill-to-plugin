@@ -1,0 +1,20 @@
+{
+  "name": "fixture-marketplace",
+  "plugins": [
+    {
+      "name": "demo-relative",
+      "source": "./plugins/demo-relative"
+    },
+    {
+      "name": "no-skills",
+      "source": "./plugins/no-skills"
+    },
+    {
+      "name": "command-source",
+      "source": {
+        "source": "command",
+        "command": "echo this-must-never-run"
+      }
+    }
+  ]
+}

@@ -1,0 +1,45 @@
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agent-skill-to-plugin"
+version = "0.5.0"
+description = "Safely resolve Agent Skills and package them as OpenAI skills-only plugins."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+authors = [{ name = "Agent Skill to Plugin contributors" }]
+dependencies = ["PyYAML>=6.0.2,<7"]
+keywords = ["agent-skills", "openai", "codex", "chatgpt", "claude-code", "plugins"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+]
+
+[project.urls]
+Homepage = "https://github.com/H4M4CHi-ttr/skills"
+Repository = "https://github.com/H4M4CHi-ttr/skills"
+Issues = "https://github.com/H4M4CHi-ttr/skills/issues"
+Changelog = "https://github.com/H4M4CHi-ttr/skills/blob/main/CHANGELOG.md"
+
+[project.scripts]
+agent-skill-to-plugin = "agent_skill_to_plugin.cli:main"
+
+[tool.setuptools]
+package-dir = { "" = "scripts" }
+
+[tool.setuptools.packages.find]
+where = ["scripts"]
+include = ["agent_skill_to_plugin*"]
+
+[tool.coverage.run]
+branch = true
+source = ["agent_skill_to_plugin"]

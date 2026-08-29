@@ -1,0 +1,37 @@
+"""Centralized compatibility and resource limits.
+
+These values are intentionally conservative local safety policy. They are kept
+in one module so a future OpenAI packaging limit change does not require edits
+throughout the resolver and packager.
+"""
+
+from __future__ import annotations
+
+SCHEMA_VERSION = "1.0"
+TOOL_VERSION = "0.5.0"
+SPEC_SNAPSHOT_DATE = "2026-08-29"
+
+MAX_PLUGIN_NAME = 64
+MAX_SKILL_NAME = 64
+MAX_COMBINED_IDENTITY = 64
+MAX_PLUGIN_DESCRIPTION = 1024
+MAX_SKILL_DESCRIPTION = 1024
+MAX_PLUGIN_DISPLAY_NAME = 64
+MAX_PLUGIN_SHORT_DESCRIPTION = 80
+MIN_SKILL_SHORT_DESCRIPTION = 25
+MAX_SKILL_SHORT_DESCRIPTION = 64
+MAX_DEVELOPER_NAME = 80
+MAX_DEFAULT_PROMPT = 128
+
+MAX_FILES = 5_000
+MAX_TOTAL_BYTES = 512 * 1024 * 1024
+MAX_COMPRESSED_BYTES = 100 * 1024 * 1024
+MAX_MEMBER_BYTES = 100 * 1024 * 1024
+MAX_DEPTH = 20
+MAX_PATH_CHARS = 1_024
+MAX_HTTP_BYTES = 100 * 1024 * 1024
+MAX_REDIRECTS = 5
+MAX_REPORT_TEXT = 20_000
+
+DEFAULT_TIMEOUT_SECONDS = 300
+DEFAULT_PLUGIN_VERSION = "0.1.0"

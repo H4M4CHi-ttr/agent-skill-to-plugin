@@ -1,0 +1,9 @@
+{
+  "name": "root-marketplace",
+  "plugins": [
+    {
+      "name": "root-plugin",
+      "source": "./"
+    }
+  ]
+}
