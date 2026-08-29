@@ -11,6 +11,7 @@ All notable changes to Agent Skill to Plugin are documented here. The project fo
 ### Changed
 
 - Renamed the public repository from `skills` to `agent-skill-to-plugin` and updated package metadata URLs.
+- Clarified that Plugin packaging extends reusable Skills to ordinary ChatGPT Chat, while local-file and repository workflows remain better suited to Work, Codex, or the CLI.
 
 ## [0.5.0] - 2026-08-29
 

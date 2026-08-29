@@ -8,6 +8,12 @@ Version 0.5.0 is a public beta. Review generated warnings and the upstream licen
 
 This is an independent open-source project. It is not affiliated with or endorsed by OpenAI or Anthropic.
 
+## Why turn a Skill into a plugin?
+
+One major goal of this project is to make reusable Agent Skills available in ordinary ChatGPT Chat, not only in Work or Codex. [OpenAI's plugin model](https://developers.openai.com/plugins/build/plugins) gives a Skill an installable identity and tells ChatGPT and Codex which workflows and packaged resources belong together. After conversion and installation, an instruction- or resource-driven Skill can be used from a regular Chat conversation instead of remaining limited to agent-oriented work surfaces.
+
+Chat has an important boundary: it is primarily a conversational surface, not a general-purpose local-filesystem environment. Do not design the Chat path around reading from or writing to arbitrary paths or repository trees on the user's computer. In Chat, favor conversational workflows, packaged resources, files the user explicitly supplies, and tools that the current surface exposes. Use Work for file-centered deliverables, and use Codex or the CLI for repository and local-filesystem workflows. This distinction follows [OpenAI's current product guidance](https://learn.chatgpt.com/); exact availability still depends on the product surface, rollout, and workspace policy.
+
 ## What it solves
 
 Agent Skills are published as repository directories, `npx skills add` commands, Claude Plugin entries, archives, and local folders. Those inputs do not all have the same boundaries or manifests. Agent Skill to Plugin normalizes them into one model, discovers valid `SKILL.md` files, pauses when a structural choice is genuinely ambiguous, and emits:
@@ -55,7 +61,9 @@ The builder rejects symlinks and path collisions, excludes build/cache files, an
 
 After installing the Agent Skill to Plugin Skill/Plugin in a supported surface:
 
-1. Paste one install command, GitHub URL, or local path into the chat and ask to package it as an OpenAI plugin.
+The converter itself still needs access to the referenced source and a Python-capable execution environment. An ordinary Chat conversation cannot be assumed to resolve a local path on your computer. Use a reachable GitHub/archive source, explicitly provide the files when the surface supports it, or run conversion in Work, Codex, or the CLI; then install and use the generated Plugin in Chat.
+
+1. Paste one install command, GitHub URL, or a local path that the current surface can access into the chat and ask to package it as an OpenAI plugin.
 2. The Skill writes that logical request to a UTF-8 input file and runs the tool with `--json`.
 3. If the response is `needs_selection`, choose by number, Skill name, path, or “all.” The Skill resumes from the saved resolution rather than fetching the branch again.
 4. Review the returned Skill list, warnings, provenance, JSON/Markdown reports, and ZIP SHA-256.

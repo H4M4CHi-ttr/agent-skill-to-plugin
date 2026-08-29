@@ -8,6 +8,12 @@ Agent Skill to Pluginは、複数のAgent Skills環境から既存の有効な`S
 
 本ツールは独立したオープンソースプロジェクトであり、OpenAIまたはAnthropicの公式・提携製品ではありません。
 
+## なぜSkillをPluginにするのか
+
+本プロジェクトの大きな目的の一つは、再利用可能なAgent SkillをWorkやCodexだけでなく、通常のChatGPT Chatでも使える形にすることです。[OpenAIのPluginモデル](https://developers.openai.com/plugins/build/plugins)は、Skillにインストール可能な単位を与え、どのワークフローと同梱リソースが一組なのかをChatGPTとCodexへ伝えます。変換してインストールすれば、指示や同梱リソースを中心とするSkillを、agent型の作業画面だけに閉じず通常のChatからも利用できます。
+
+ただしChatには重要な境界があります。Chatは会話を中心とする画面であり、汎用的なローカルファイルシステム環境ではありません。ユーザーのPC上にある任意のパスやリポジトリツリーを読み書きすることを、Chat向けワークフローの前提にしないでください。Chatでは会話、同梱リソース、ユーザーが明示的に提供したファイル、その画面で利用可能なツールを中心に設計します。ファイル中心の成果物にはWork、リポジトリやローカルファイルシステムを扱うワークフローにはCodexまたはCLIを使ってください。この区別は[OpenAIの現在の製品案内](https://learn.chatgpt.com/)に基づきますが、実際の利用可否は画面、ロールアウト、ワークスペースポリシーによって異なります。
+
 ## 解決する課題
 
 Agent Skillは、リポジトリ内のディレクトリ、`npx skills add`、Claude Plugin、アーカイブ、ローカルフォルダーなど、異なる形で配布されています。本ツールはこれらを共通モデルへ正規化し、有効な`SKILL.md`を発見します。構造上の候補が一意でなければ選択を要求し、次を生成します。
@@ -54,7 +60,9 @@ python -B scripts/build_skill_zip.py --output ../agent-skill-to-plugin-v0.5.0.zi
 
 対応する画面へAgent Skill to Plugin Skill／Pluginをインストールした後の流れです。
 
-1. 一つのインストールコマンド、GitHub URL、またはローカルパスをChatへ貼り、変換を依頼します。
+変換ツール自体には、参照する取得元へのアクセスとPythonを実行できる環境が必要です。通常のChatからユーザーPC上のローカルパスを解決できるとは限りません。到達可能なGitHub／アーカイブを使う、画面が対応する場合は必要なファイルを明示的に提供する、またはWork、Codex、CLIで変換してください。生成したPluginは、その後Chatへインストールして利用できます。
+
+1. 一つのインストールコマンド、GitHub URL、または現在の画面からアクセスできるローカルパスをChatへ貼り、変換を依頼します。
 2. Skillが論理的依頼をUTF-8入力ファイルへ保存し、`--json`付きでツールを実行します。
 3. `needs_selection`なら、番号、Skill名、パス、または「すべて」で選びます。Skillはブランチを再取得せず、保存済みResolutionから再開します。
 4. Skill一覧、警告、来歴、JSON／Markdownレポート、ZIP SHA-256を確認します。
