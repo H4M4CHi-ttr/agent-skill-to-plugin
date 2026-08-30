@@ -4,7 +4,7 @@
 
 Agent Skill to Plugin is a local acquisition and packaging tool. User-provided request text, remote repositories, archives, npm packages, Marketplace manifests, `SKILL.md`, README files, filenames, Git output, HTTP responses, and subprocess stderr/stdout are untrusted.
 
-The trusted computing base includes the tool source, Python runtime and PyYAML, required local executables, operating-system filesystem semantics, and the user's preconfigured Git/SSH trust decisions. A compromised Git, Node, npx, Claude CLI, Python, certificate store, or host is outside the tool's containment guarantee.
+The trusted computing base includes the tool source; `uv`, its managed Python, and resolved PyYAML on the preferred path; or the separately installed Python and PyYAML on the fallback path; required local executables; operating-system filesystem semantics; and the user's preconfigured Git/SSH trust decisions. A compromised uv cache or package source, Git, Node, npx, Claude CLI, Python, certificate store, or host is outside the tool's containment guarantee.
 
 ## Protected assets
 

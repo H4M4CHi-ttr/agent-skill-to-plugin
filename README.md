@@ -30,12 +30,21 @@ It does not translate Claude commands, agents, hooks, MCP servers, settings, or 
 
 ## Requirements
 
-- Python 3.10 or newer
+- Recommended runtime: [`uv`](https://docs.astral.sh/uv/getting-started/installation/). The Skill uses it internally to provision a compatible Python and PyYAML in an isolated environment.
+- Fallback runtime: Python 3.10 or newer with PyYAML 6.x
 - Git for GitHub and Git sources
-- Node.js/npm/npx only when importing an `npx skills add` request
+- Node.js/npm/npx for the installation command below, and when importing an `npx skills add` request
 - Claude CLI only as an optional, read-only aid for resolving already registered Claude Marketplaces
 
-Install for development:
+Install the Skill from the public repository:
+
+```bash
+npx skills add H4M4CHi-ttr/agent-skill-to-plugin
+```
+
+`npx skills add` installs the Skill files but does not install `uv`. Once `uv` is available on a supported execution surface, the Skill invokes `uv run` itself. A person using the Skill from ChatGPT or Codex normally does not need to choose a Python version, install PyYAML, or enter `uv` commands.
+
+For development, or to prepare the Python fallback manually:
 
 ```bash
 python -m venv .venv
@@ -43,9 +52,11 @@ python -m venv .venv
 .venv/bin/python -m pip install -e .
 ```
 
-This installs PyYAML 6.x as the only Python runtime dependency. PyYAML is not
-vendored into release archives; the package installer obtains it separately
-under its upstream license.
+PyYAML 6.x is the only Python runtime dependency. It is declared both in the
+Python package metadata and in the entry script's PEP 723 inline metadata. It
+is not vendored into release archives: `uv` resolves it into an isolated
+environment on the preferred path, while the Python package installer obtains
+it separately on the fallback path.
 
 On Windows PowerShell, replace `.venv/bin/python` above with `.venv\Scripts\python.exe` (or activate with `.venv\Scripts\Activate.ps1`). `npx.cmd` input is accepted, but the tool never sends it through a command shell.
 
@@ -63,7 +74,7 @@ The builder rejects symlinks and path collisions, excludes build/cache files, an
 
 After installing the Agent Skill to Plugin Skill/Plugin in a supported surface:
 
-The converter itself still needs access to the referenced source and a Python-capable execution environment. An ordinary Chat conversation cannot be assumed to resolve a local path on your computer. Use a reachable GitHub/archive source, explicitly provide the files when the surface supports it, or run conversion in Work, Codex, or the CLI; then install and use the generated Plugin in Chat.
+The converter itself still needs access to the referenced source and an execution environment that can run `uv` (recommended) or the Python fallback. An ordinary Chat conversation cannot be assumed to resolve a local path on your computer. Use a reachable GitHub/archive source, explicitly provide the files when the surface supports it, or run conversion in Work, Codex, or the CLI; then install and use the generated Plugin in Chat.
 
 1. Paste one install command, GitHub URL, or a local path that the current surface can access into the chat and ask to package it as an OpenAI plugin.
 2. The Skill writes that logical request to a UTF-8 input file and runs the tool with `--json`.
@@ -82,19 +93,21 @@ Put one logical import request in a UTF-8 file:
 npx skills add vercel-labs/agent-skills --skill web-design-guidelines
 ```
 
-Then run:
+For manual CLI use, run with the recommended runtime:
 
 ```bash
-python scripts/skill_to_plugin.py run \
+uv run scripts/skill_to_plugin.py run \
   --input-file input.txt \
   --output-root converted-skills-marketplace \
   --json
 ```
 
+If `uv` is unavailable and Python 3.10+ with PyYAML 6.x is already installed, replace `uv run` with `python` (or `python3`).
+
 If exactly one Skill is selected by deterministic rules, `run` resolves and packages it. If several repository Skills remain plausible, it returns `status: needs_selection`, exit code 10, and a persistent resolution file. Resume without re-fetching the branch:
 
 ```bash
-python scripts/skill_to_plugin.py convert \
+uv run scripts/skill_to_plugin.py convert \
   --resolution converted-skills-marketplace/resolutions/<resolution-id>.json \
   --select <candidate-id> \
   --json
@@ -105,7 +118,7 @@ python scripts/skill_to_plugin.py convert \
 For a resolve-only first phase:
 
 ```bash
-python scripts/skill_to_plugin.py resolve \
+uv run scripts/skill_to_plugin.py resolve \
   --input-file input.txt \
   --output-root converted-skills-marketplace \
   --json

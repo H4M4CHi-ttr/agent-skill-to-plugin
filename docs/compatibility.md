@@ -28,9 +28,11 @@ The tool generates only skills-only Plugins. It does not add MCP servers, apps, 
 
 Some values are intentionally conservative Agent Skill to Plugin policy. They must not be described as official OpenAI hard limits unless an official source explicitly says so. When OpenAI specifications change, update the centralized values, this dated document, tests, and `CHANGELOG.md` together.
 
-## Python and operating systems
+## Runtime and operating systems
 
-The package declares Python 3.10 through 3.13 compatibility and depends on PyYAML 6.x. PyYAML is declared in `pyproject.toml`/`requirements.txt`, installed separately by the Python package manager, and is not vendored in the repository ZIP. The repository includes a GitHub Actions workflow definition for Windows, Linux, and macOS. A workflow file is not evidence that a particular commit passed hosted CI; consult the repository's actual Actions results.
+The preferred runtime is `uv`. `scripts/skill_to_plugin.py` declares Python 3.10+ and PyYAML 6.x with PEP 723 inline metadata, allowing `uv run` to create an isolated environment and obtain a compatible Python when needed. `npx skills add` does not install `uv`, and the Skill never installs `uv` automatically.
+
+The fallback is a separately installed Python 3.10+ with PyYAML 6.x. PyYAML remains declared in `pyproject.toml` and `requirements.txt`; it is not vendored in the repository ZIP. The repository includes a GitHub Actions workflow definition for Windows, Linux, and macOS. A workflow file is not evidence that a particular commit passed hosted CI; consult the repository's actual Actions results.
 
 Filesystem validation intentionally applies portable constraints even when running on a single platform. Windows reserved names, trailing-dot/space rules, case-insensitive collisions, POSIX ZIP separators, Unicode normalization, symlinks, and reparse points are considered during packaging.
 
@@ -38,8 +40,8 @@ Filesystem validation intentionally applies portable constraints even when runni
 
 | Source | Required dependency | Authentication behavior |
 |---|---|---|
-| local file/directory/archive | Python only | none |
-| HTTPS Skill/archive/npm tarball | Python TLS stack and network | no credentials in URLs; public npm registry in 0.5.0 |
+| local file/directory/archive | no additional source tool beyond the selected runtime | none |
+| HTTPS Skill/archive/npm tarball | network access from the selected runtime | no credentials in URLs; public npm registry in 0.5.0 |
 | GitHub/Git | Git executable | existing Git/SSH configuration only |
 | npx skills | Node.js/npm/npx | isolated npm cache/config; no user-home installation |
 | Claude Marketplace discovery | optional Claude executable | only `plugin marketplace list --json`, read-only |

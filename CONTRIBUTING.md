@@ -26,7 +26,7 @@ Before a release, build distributions and the uploadable Skill ZIP, then inspect
 .venv/bin/python -B scripts/build_skill_zip.py --output ../agent-skill-to-plugin-v0.5.0.zip
 ```
 
-Python 3.10 is the minimum supported runtime. The only runtime dependency in 0.5.0 is PyYAML. Git, npx, and Claude CLI are source-specific external tools and must not become unconditional test requirements.
+The preferred end-user runtime is `uv`; the Python fallback supports Python 3.10+ and PyYAML is the only Python runtime dependency in 0.5.0. Keep the PEP 723 metadata in `scripts/skill_to_plugin.py`, `pyproject.toml`, and `requirements.txt` synchronized. Git, npx, and Claude CLI are source-specific external tools and must not become unconditional test requirements.
 
 ## Design rules
 

@@ -13,7 +13,7 @@ Do not open a public issue for a vulnerability or include live credentials, priv
 Use the repository's **Security → Report a vulnerability** form (GitHub private vulnerability reporting) when enabled. If it is unavailable, contact the repository maintainers privately through the repository owner's established security contact. Include:
 
 - affected Agent Skill to Plugin version and commit;
-- operating system and Python version;
+- operating system and runtime path (`uv` plus resolved Python version, or direct Python version);
 - source type and the smallest safe, synthetic reproducer;
 - expected and observed security boundary;
 - impact and whether the issue requires user interaction; and

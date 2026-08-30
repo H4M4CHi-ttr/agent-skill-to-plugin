@@ -13,6 +13,7 @@ All notable changes to Agent Skill to Plugin are documented here. The project fo
 - Renamed the public repository from `skills` to `agent-skill-to-plugin` and updated package metadata URLs.
 - Clarified that Plugin packaging extends reusable Skills to ordinary ChatGPT Chat, while local-file and repository workflows remain better suited to Work, Codex, or the CLI.
 - Documented the current desktop-app path for local and repository Marketplace plugins without overstating individual-plan availability.
+- Made `uv` the recommended end-user runtime with inline Python/PyYAML metadata, while retaining Python 3.10+ with PyYAML 6.x as a fallback.
 
 ## [0.5.0] - 2026-08-29
 

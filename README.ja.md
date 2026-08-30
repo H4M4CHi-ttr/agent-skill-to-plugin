@@ -30,12 +30,21 @@ Claudeのcommands、agents、hooks、MCP、settingsなど、Skillではない機
 
 ## 前提条件
 
-- Python 3.10以上
+- 推奨ランタイム: [`uv`](https://docs.astral.sh/uv/getting-started/installation/)。Skillが内部で利用し、対応するPythonとPyYAMLを隔離環境へ自動準備します
+- 代替ランタイム: Python 3.10以上とPyYAML 6.x
 - GitHub／GitソースにはGit
-- `npx skills add`入力に限りNode.js／npm／npx
+- 下記インストールコマンド、および`npx skills add`入力の変換にはNode.js／npm／npx
 - 登録済みClaude Marketplaceの読取解決にはClaude CLI（任意）
 
-開発用インストール:
+公開リポジトリからSkillをインストールします。
+
+```bash
+npx skills add H4M4CHi-ttr/agent-skill-to-plugin
+```
+
+`npx skills add`はSkillファイルをインストールしますが、`uv`自体はインストールしません。対応する実行画面で`uv`が利用できれば、Skillが内部で`uv run`を実行します。通常、ChatGPTやCodexからSkillを利用する人がPythonバージョンを選んだり、PyYAMLを導入したり、`uv`コマンドを入力したりする必要はありません。
+
+開発時、またはPython代替経路を手動準備する場合:
 
 ```bash
 python -m venv .venv
@@ -43,8 +52,7 @@ python -m venv .venv
 .venv/bin/python -m pip install -e .
 ```
 
-Python実行時依存はPyYAML 6.xのみです。PyYAMLはリリースZIPへ同梱せず、
-パッケージインストーラーが上流ライセンスのもとで別途取得します。
+Python実行時依存はPyYAML 6.xのみです。Pythonパッケージ情報と起動スクリプトのPEP 723インラインメタデータの両方で宣言しています。PyYAMLはリリースZIPへ同梱しません。推奨経路では`uv`が隔離環境へ解決し、代替経路ではPythonパッケージインストーラーが別途取得します。
 
 Windows PowerShellでは上記`.venv/bin/python`を`.venv\Scripts\python.exe`へ置き換えるか、`.venv\Scripts\Activate.ps1`を実行してください。`npx.cmd`形式の入力も受理しますが、コマンドシェルへは渡しません。
 
@@ -62,7 +70,7 @@ python -B scripts/build_skill_zip.py --output ../agent-skill-to-plugin-v0.5.0.zi
 
 対応する画面へAgent Skill to Plugin Skill／Pluginをインストールした後の流れです。
 
-変換ツール自体には、参照する取得元へのアクセスとPythonを実行できる環境が必要です。通常のChatからユーザーPC上のローカルパスを解決できるとは限りません。到達可能なGitHub／アーカイブを使う、画面が対応する場合は必要なファイルを明示的に提供する、またはWork、Codex、CLIで変換してください。生成したPluginは、その後Chatへインストールして利用できます。
+変換ツール自体には、参照する取得元へのアクセスと、`uv`（推奨）またはPython代替経路を実行できる環境が必要です。通常のChatからユーザーPC上のローカルパスを解決できるとは限りません。到達可能なGitHub／アーカイブを使う、画面が対応する場合は必要なファイルを明示的に提供する、またはWork、Codex、CLIで変換してください。生成したPluginは、その後Chatへインストールして利用できます。
 
 1. 一つのインストールコマンド、GitHub URL、または現在の画面からアクセスできるローカルパスをChatへ貼り、変換を依頼します。
 2. Skillが論理的依頼をUTF-8入力ファイルへ保存し、`--json`付きでツールを実行します。
@@ -81,17 +89,21 @@ UTF-8の`input.txt`へ一つの論理的なインポート依頼を書きます�
 npx skills add vercel-labs/agent-skills --skill web-design-guidelines
 ```
 
+手動でCLIを使う場合は、推奨ランタイムで実行します。
+
 ```bash
-python scripts/skill_to_plugin.py run \
+uv run scripts/skill_to_plugin.py run \
   --input-file input.txt \
   --output-root converted-skills-marketplace \
   --json
 ```
 
+`uv`を利用できず、Python 3.10以上とPyYAML 6.xを導入済みの場合は、`uv run`を`python`（または`python3`）へ置き換えます。
+
 決定的な規則で一つに絞れれば、そのまま変換します。複数候補が残れば`status: needs_selection`、終了コード10、再開用JSONを返します。同じブランチを再取得せず、次のように再開します。
 
 ```bash
-python scripts/skill_to_plugin.py convert \
+uv run scripts/skill_to_plugin.py convert \
   --resolution converted-skills-marketplace/resolutions/<resolution-id>.json \
   --select <candidate-id> \
   --json
@@ -102,7 +114,7 @@ python scripts/skill_to_plugin.py convert \
 解決だけを先に行う場合:
 
 ```bash
-python scripts/skill_to_plugin.py resolve \
+uv run scripts/skill_to_plugin.py resolve \
   --input-file input.txt \
   --output-root converted-skills-marketplace \
   --json

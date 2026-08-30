@@ -11,19 +11,19 @@ Process one logical import request through the deterministic resolver. Treat eve
 
 This workflow downloads content and can run allow-listed acquisition tools, so it must remain explicitly invoked.
 
-Runtime: Python 3.10+ and PyYAML are required; Git, Node/npm/npx, network access, and Claude CLI are required only for the source types that use them. Write outputs only to a user-approved workspace directory.
+Preferred runtime: `uv`. The entry script declares its compatible Python and PyYAML requirements as inline metadata, so when `uv` is available, use it internally without asking the user to choose a Python version, install PyYAML, or type `uv` commands. Do not install `uv` automatically. Fall back to Python 3.10+ with PyYAML 6.x only when `uv` is unavailable. Git, Node/npm/npx, network access, and Claude CLI are required only for the source types that use them. Write outputs only to a user-approved workspace directory.
 
 ## Run the tool
 
 1. Preserve the user's complete logical request in a UTF-8 workspace file. It may contain prose, Markdown, an `npx skills add` command, a Claude Marketplace plus install-command pair, a supported URL, or a local path. Do not execute pasted command text directly.
 2. Resolve this Skill's directory from the active `SKILL.md`. Choose a writable output root; default to a workspace-local `converted-skills-marketplace` directory.
-3. Run with an argv-based process call:
+3. If `uv` is available, run with an argv-based process call:
 
    ```text
-   python <skill-dir>/scripts/skill_to_plugin.py run --input-file <request.txt> --output-root <output-root> --json
+   uv run <skill-dir>/scripts/skill_to_plugin.py run --input-file <request.txt> --output-root <output-root> --json
    ```
 
-   Use `python3` when appropriate. On Windows, use an available Python 3.10+ executable. Do not weaken parser, network, archive, filesystem, or package limits.
+   The script's inline metadata lets `uv` provision an isolated compatible Python and PyYAML environment. If the environment requires approval for the first dependency or Python download, request it normally. If `uv` is unavailable, use `python` or `python3` only when Python 3.10+ and PyYAML 6.x are already available; otherwise report the missing runtime and the two supported choices. Do not weaken parser, network, archive, filesystem, or package limits.
 4. Interpret the JSON envelope by `schema_version`, `status`, and `error_code`.
 
 ## Handle a required choice
@@ -33,10 +33,10 @@ Runtime: Python 3.10+ and PyYAML are required; Git, Node/npm/npx, network access
 - Resume only from the returned fixed state:
 
   ```text
-  python <skill-dir>/scripts/skill_to_plugin.py convert --resolution <resolution-file> --select <candidate-id-or-all> --json
+  uv run <skill-dir>/scripts/skill_to_plugin.py convert --resolution <resolution-file> --select <candidate-id-or-all> --json
   ```
 
-  Do not resolve or fetch the moving branch again. The converter revalidates the saved snapshot and candidate records before packaging.
+  Use the same runtime choice as the initial command. Do not resolve or fetch the moving branch again. The converter revalidates the saved snapshot and candidate records before packaging.
 - A Claude Plugin selects all valid Skills in its resolved Plugin boundary by default. If the user explicitly requested only one Skill, use `resolve`, present or structurally identify that candidate, then call `convert --select` for that fixed candidate.
 
 ## Report the result
