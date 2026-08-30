@@ -14,6 +14,7 @@ All notable changes to Agent Skill to Plugin are documented here. The project fo
 - Clarified that Plugin packaging extends reusable Skills to ordinary ChatGPT Chat, while local-file and repository workflows remain better suited to Work, Codex, or the CLI.
 - Documented the current desktop-app path for local and repository Marketplace plugins without overstating individual-plan availability.
 - Made `uv` the recommended end-user runtime with inline Python/PyYAML metadata, while retaining Python 3.10+ with PyYAML 6.x as a fallback.
+- Made `npx skills add` the sole documented end-user distribution path for this Skill; the deterministic Skill archive remains an internal CI packaging check, while generated Plugin ZIPs remain converter outputs.
 
 ## [0.5.0] - 2026-08-29
 
@@ -31,7 +32,7 @@ All notable changes to Agent Skill to Plugin are documented here. The project fo
 - Normalized the locally rejected `...` front-matter closer, validated icon assets, required default prompts to mention the Skill token, and reported agent metadata changes at field-path granularity without recording values.
 - Changed unresolved relative references from a false-positive-prone hard failure to an explicit report warning; snapshot escapes, unsafe targets, and copy collisions still fail closed.
 - Offline fixtures and automated tests, plus a cross-platform GitHub Actions workflow definition for Python 3.10, 3.13, and 3.14.
-- Deterministic release-Skill ZIP builder with single-root and cache-exclusion validation.
+- Deterministic single-root Skill archive builder for internal packaging validation.
 - English and Japanese documentation for public beta use.
 
 ### Security

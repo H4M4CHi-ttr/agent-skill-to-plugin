@@ -53,5 +53,5 @@ jobs:
           python -c "import agent_skill_to_plugin; assert agent_skill_to_plugin.TOOL_VERSION == '0.5.0'"
           agent-skill-to-plugin --version
 
-      - name: Build and verify uploadable Skill ZIP
-        run: python scripts/build_skill_zip.py --output ../agent-skill-to-plugin-skill.zip
+      - name: Verify deterministic Skill archive (internal only)
+        run: python scripts/build_skill_zip.py --output ../agent-skill-to-plugin-ci-check.zip

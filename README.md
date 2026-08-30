@@ -42,6 +42,8 @@ Install the Skill from the public repository:
 npx skills add H4M4CHi-ttr/agent-skill-to-plugin
 ```
 
+This `npx skills add` command is the sole supported end-user distribution path for Agent Skill to Plugin. The project does not publish a separate ZIP for installing this Skill. ZIPs produced by the converter are generated Plugin outputs, not installers for Agent Skill to Plugin itself.
+
 `npx skills add` installs the Skill files but does not install `uv`. Once `uv` is available on a supported execution surface, the Skill invokes `uv run` itself. A person using the Skill from ChatGPT or Codex normally does not need to choose a Python version, install PyYAML, or enter `uv` commands.
 
 For development, or to prepare the Python fallback manually:
@@ -54,19 +56,11 @@ python -m venv .venv
 
 PyYAML 6.x is the only Python runtime dependency. It is declared both in the
 Python package metadata and in the entry script's PEP 723 inline metadata. It
-is not vendored into release archives: `uv` resolves it into an isolated
-environment on the preferred path, while the Python package installer obtains
-it separately on the fallback path.
+is not vendored: `uv` resolves it into an isolated environment on the preferred
+path, while the Python package installer obtains it separately on the fallback
+path.
 
 On Windows PowerShell, replace `.venv/bin/python` above with `.venv\Scripts\python.exe` (or activate with `.venv\Scripts\Activate.ps1`). `npx.cmd` input is accepted, but the tool never sends it through a command shell.
-
-Build the uploadable, deterministic Skill ZIP outside the source tree:
-
-```bash
-python -B scripts/build_skill_zip.py --output ../agent-skill-to-plugin-v0.5.0.zip
-```
-
-The builder rejects symlinks and path collisions, excludes build/cache files, and verifies that the ZIP contains exactly one top-level `agent-skill-to-plugin/` directory.
 
 ## Quick start
 
@@ -79,7 +73,7 @@ The converter itself still needs access to the referenced source and an executio
 1. Paste one install command, GitHub URL, or a local path that the current surface can access into the chat and ask to package it as an OpenAI plugin.
 2. The Skill writes that logical request to a UTF-8 input file and runs the tool with `--json`.
 3. If the response is `needs_selection`, choose by number, Skill name, path, or “all.” The Skill resumes from the saved resolution rather than fetching the branch again.
-4. Review the returned Skill list, warnings, provenance, JSON/Markdown reports, and ZIP SHA-256.
+4. Review the returned Skill list, warnings, provenance, JSON/Markdown reports, and generated Plugin ZIP SHA-256.
 5. Register the generated local Marketplace and install the resulting Plugin manually in a supported surface.
 6. Open a new chat and explicitly invoke the imported Skill for its first functional test.
 

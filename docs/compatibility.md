@@ -32,7 +32,7 @@ Some values are intentionally conservative Agent Skill to Plugin policy. They mu
 
 The preferred runtime is `uv`. `scripts/skill_to_plugin.py` declares Python 3.10+ and PyYAML 6.x with PEP 723 inline metadata, allowing `uv run` to create an isolated environment and obtain a compatible Python when needed. `npx skills add` does not install `uv`, and the Skill never installs `uv` automatically.
 
-The fallback is a separately installed Python 3.10+ with PyYAML 6.x. PyYAML remains declared in `pyproject.toml` and `requirements.txt`; it is not vendored in the repository ZIP. The repository includes a GitHub Actions workflow definition for Windows, Linux, and macOS. A workflow file is not evidence that a particular commit passed hosted CI; consult the repository's actual Actions results.
+The fallback is a separately installed Python 3.10+ with PyYAML 6.x. PyYAML remains declared in `pyproject.toml` and `requirements.txt`; it is resolved separately rather than vendored. The repository includes a GitHub Actions workflow definition for Windows, Linux, and macOS. A workflow file is not evidence that a particular commit passed hosted CI; consult the repository's actual Actions results.
 
 Filesystem validation intentionally applies portable constraints even when running on a single platform. Windows reserved names, trailing-dot/space rules, case-insensitive collisions, POSIX ZIP separators, Unicode normalization, symlinks, and reparse points are considered during packaging.
 

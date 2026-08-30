@@ -16,8 +16,8 @@ _SPEC.loader.exec_module(_MODULE)
 build_skill_zip = _MODULE.build_skill_zip
 
 
-class ReleaseZipTests(unittest.TestCase):
-    def test_release_zip_is_deterministic_single_root_and_excludes_caches(self) -> None:
+class SkillArchiveTests(unittest.TestCase):
+    def test_skill_archive_is_deterministic_single_root_and_excludes_caches(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             base = Path(temporary)
             source = base / "agent-skill-to-plugin"
@@ -50,7 +50,7 @@ class ReleaseZipTests(unittest.TestCase):
                 (source / relative).write_text(relative, encoding="utf-8")
             (source / "agents" / "openai.yaml").write_text("interface: {}\n", encoding="utf-8")
             with self.assertRaises(ValueError):
-                build_skill_zip(source, source / "release.zip")
+                build_skill_zip(source, source / "archive.zip")
 
 
 if __name__ == "__main__":

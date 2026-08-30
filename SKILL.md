@@ -1,6 +1,6 @@
 ---
 name: agent-skill-to-plugin
-description: "Safely resolve Agent Skills from npx commands, GitHub or Git URLs, Claude Plugin requests, archives, and local paths, then package selected valid SKILL.md content as an OpenAI skills-only plugin, local marketplace, ZIP, and provenance report. Use when the user asks to port, pluginize, import, or package an existing Agent Skill for ChatGPT or Codex."
+description: "Safely resolve Agent Skills from npx commands, GitHub or Git URLs, Claude Plugin requests, archives, and local paths, then package selected valid SKILL.md content as an OpenAI skills-only plugin, local marketplace, Plugin ZIP, and provenance report. Use when the user asks to port, pluginize, import, or package an existing Agent Skill for ChatGPT or Codex."
 metadata:
   version: "0.5.0"
 ---
@@ -45,13 +45,13 @@ On `ok`, report:
 
 - generated Plugin name and included Skills;
 - Plugin directory and Plugin tree hash;
-- uploadable ZIP and its SHA-256;
+- generated Plugin ZIP and its SHA-256;
 - Marketplace root, marketplace file, and the generated manual registration command;
 - JSON and Markdown conversion reports;
 - normalized source, fixed commit or snapshot hash, original paths, acquisition time, tool version, and detected license evidence;
 - every compatibility, security, and license warning.
 
-Attach or link the ZIP when the current surface supports files. Do not claim success unless the reported files exist and their hashes were verified.
+Attach or link the generated Plugin ZIP when the current surface supports files. Do not claim success unless the reported files exist and their hashes were verified.
 
 On `needs_input`, `needs_selection`, or `error`, do not claim that a Plugin was generated. Explain the sanitized diagnostic and the one next action needed.
 

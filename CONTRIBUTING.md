@@ -19,12 +19,14 @@ python -m venv .venv
 
 On Windows PowerShell, use `.venv\Scripts\python.exe` in place of `.venv/bin/python`.
 
-Before a release, build distributions and the uploadable Skill ZIP, then inspect their contents:
+Before a release, build the Python distributions and run the deterministic Skill-archive packaging check:
 
 ```bash
 .venv/bin/python -m build
-.venv/bin/python -B scripts/build_skill_zip.py --output ../agent-skill-to-plugin-v0.5.0.zip
+.venv/bin/python -B scripts/build_skill_zip.py --output ../agent-skill-to-plugin-ci-check.zip
 ```
+
+The Skill archive is an internal CI invariant check only. Do not publish or attach it as a release asset. End users install Agent Skill to Plugin with `npx skills add H4M4CHi-ttr/agent-skill-to-plugin`; generated Plugin ZIPs remain converter outputs.
 
 The preferred end-user runtime is `uv`; the Python fallback supports Python 3.10+ and PyYAML is the only Python runtime dependency in 0.5.0. Keep the PEP 723 metadata in `scripts/skill_to_plugin.py`, `pyproject.toml`, and `requirements.txt` synchronized. Git, npx, and Claude CLI are source-specific external tools and must not become unconditional test requirements.
 

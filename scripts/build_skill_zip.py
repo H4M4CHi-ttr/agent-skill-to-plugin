@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build the deterministic, single-root uploadable Skill ZIP."""
+"""Build a deterministic, single-root Skill archive for internal packaging checks."""
 
 from __future__ import annotations
 
@@ -40,7 +40,7 @@ def _is_excluded(relative: Path) -> bool:
     ) or relative.suffix.lower() in {".pyc", ".pyo"}
 
 
-def _release_files(source_root: Path) -> list[tuple[Path, str]]:
+def _archive_files(source_root: Path) -> list[tuple[Path, str]]:
     files: list[tuple[Path, str]] = []
     normalized: dict[str, str] = {}
     for path in sorted(source_root.rglob("*"), key=lambda item: item.relative_to(source_root).as_posix()):
@@ -48,22 +48,22 @@ def _release_files(source_root: Path) -> list[tuple[Path, str]]:
         if _is_excluded(relative):
             continue
         if path.is_symlink():
-            raise ValueError(f"release source contains a symbolic link: {relative.as_posix()}")
+            raise ValueError(f"archive source contains a symbolic link: {relative.as_posix()}")
         if path.is_dir():
             continue
         if not path.is_file():
-            raise ValueError(f"release source contains a special file: {relative.as_posix()}")
+            raise ValueError(f"archive source contains a special file: {relative.as_posix()}")
         rendered = relative.as_posix()
         key = unicodedata.normalize("NFC", rendered).casefold()
         previous = normalized.get(key)
         if previous is not None and previous != rendered:
-            raise ValueError(f"release paths collide after case/Unicode normalization: {previous}, {rendered}")
+            raise ValueError(f"archive paths collide after case/Unicode normalization: {previous}, {rendered}")
         normalized[key] = rendered
         files.append((path, rendered))
     present = {relative for _path, relative in files}
     missing = sorted(REQUIRED_FILES - present)
     if missing:
-        raise ValueError(f"release source is missing required files: {', '.join(missing)}")
+        raise ValueError(f"archive source is missing required files: {', '.join(missing)}")
     return files
 
 
@@ -77,11 +77,11 @@ def build_skill_zip(source_root: Path, output: Path, *, force: bool = False) -> 
     except ValueError:
         pass
     else:
-        raise ValueError("release ZIP must be written outside the source tree")
+        raise ValueError("Skill archive must be written outside the source tree")
     if output.exists() and not force:
         raise FileExistsError(f"output already exists: {output}")
     output.parent.mkdir(parents=True, exist_ok=True)
-    files = _release_files(source_root)
+    files = _archive_files(source_root)
     descriptor, temporary_name = tempfile.mkstemp(
         prefix=f".{output.name}.", suffix=".tmp", dir=output.parent,
     )
@@ -103,12 +103,12 @@ def build_skill_zip(source_root: Path, output: Path, *, force: bool = False) -> 
             names = archive.namelist()
             prefix = source_root.name + "/"
             if len(names) != len(set(names)) or not names or any(not name.startswith(prefix) for name in names):
-                raise ValueError("release ZIP must contain exactly one top-level Skill directory")
+                raise ValueError("Skill archive must contain exactly one top-level Skill directory")
             archived = {name[len(prefix):] for name in names}
             if not REQUIRED_FILES <= archived:
-                raise ValueError("release ZIP is missing required Skill files")
+                raise ValueError("Skill archive is missing required Skill files")
             if any("/__pycache__/" in f"/{name}/" or name.endswith((".pyc", ".pyo")) for name in names):
-                raise ValueError("release ZIP contains Python cache files")
+                raise ValueError("Skill archive contains Python cache files")
         digest = hashlib.sha256(temporary.read_bytes()).hexdigest()
         temporary.replace(output)
     except Exception:

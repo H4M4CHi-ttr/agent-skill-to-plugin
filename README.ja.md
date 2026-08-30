@@ -42,6 +42,8 @@ Claudeのcommands、agents、hooks、MCP、settingsなど、Skillではない機
 npx skills add H4M4CHi-ttr/agent-skill-to-plugin
 ```
 
+この`npx skills add`コマンドを、Agent Skill to Plugin本体の唯一の利用者向け配布経路とします。本Skillをインストールするための別個のZIPは公開しません。変換ツールが生成するZIPは変換後のPlugin成果物であり、Agent Skill to Plugin本体のインストーラーではありません。
+
 `npx skills add`はSkillファイルをインストールしますが、`uv`自体はインストールしません。対応する実行画面で`uv`が利用できれば、Skillが内部で`uv run`を実行します。通常、ChatGPTやCodexからSkillを利用する人がPythonバージョンを選んだり、PyYAMLを導入したり、`uv`コマンドを入力したりする必要はありません。
 
 開発時、またはPython代替経路を手動準備する場合:
@@ -52,17 +54,9 @@ python -m venv .venv
 .venv/bin/python -m pip install -e .
 ```
 
-Python実行時依存はPyYAML 6.xのみです。Pythonパッケージ情報と起動スクリプトのPEP 723インラインメタデータの両方で宣言しています。PyYAMLはリリースZIPへ同梱しません。推奨経路では`uv`が隔離環境へ解決し、代替経路ではPythonパッケージインストーラーが別途取得します。
+Python実行時依存はPyYAML 6.xのみです。Pythonパッケージ情報と起動スクリプトのPEP 723インラインメタデータの両方で宣言しています。PyYAMLは同梱しません。推奨経路では`uv`が隔離環境へ解決し、代替経路ではPythonパッケージインストーラーが別途取得します。
 
 Windows PowerShellでは上記`.venv/bin/python`を`.venv\Scripts\python.exe`へ置き換えるか、`.venv\Scripts\Activate.ps1`を実行してください。`npx.cmd`形式の入力も受理しますが、コマンドシェルへは渡しません。
-
-アップロード可能で決定的なSkill ZIPは、取得元ツリー外へ生成します。
-
-```bash
-python -B scripts/build_skill_zip.py --output ../agent-skill-to-plugin-v0.5.0.zip
-```
-
-ビルダーはsymlinkとパス衝突を拒否し、build／cacheを除外し、ZIPが単一トップレベル`agent-skill-to-plugin/`だけを持つことを検証します。
 
 ## クイックスタート
 
@@ -75,7 +69,7 @@ python -B scripts/build_skill_zip.py --output ../agent-skill-to-plugin-v0.5.0.zi
 1. 一つのインストールコマンド、GitHub URL、または現在の画面からアクセスできるローカルパスをChatへ貼り、変換を依頼します。
 2. Skillが論理的依頼をUTF-8入力ファイルへ保存し、`--json`付きでツールを実行します。
 3. `needs_selection`なら、番号、Skill名、パス、または「すべて」で選びます。Skillはブランチを再取得せず、保存済みResolutionから再開します。
-4. Skill一覧、警告、来歴、JSON／Markdownレポート、ZIP SHA-256を確認します。
+4. Skill一覧、警告、来歴、JSON／Markdownレポート、生成されたPlugin ZIPのSHA-256を確認します。
 5. 生成したローカルMarketplaceを手動登録し、対応する画面からPluginをインストールします。
 6. 新しいChatを開き、最初の動作確認では取り込んだSkillを明示的に呼び出します。
 
