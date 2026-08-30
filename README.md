@@ -2,9 +2,9 @@
 
 [日本語](README.ja.md)
 
-Agent Skill to Plugin safely packages existing Agent Skills as OpenAI skills-only plugins for ChatGPT and Codex. It resolves sources from several ecosystems and keeps immutable snapshots, deterministic selection, validation, provenance, packaging, and reporting as separate steps. Remote content is always treated as untrusted data.
+Agent Skill to Plugin safely packages existing Agent Skills as OpenAI skills-only plugins for ChatGPT and Codex, then registers validated results in the standard personal Marketplace. It resolves sources from several ecosystems and keeps immutable snapshots, deterministic selection, validation, provenance, packaging, registration, and reporting as separate steps. Remote content is always treated as untrusted data.
 
-Version 0.5.0 is a public beta. Review generated warnings and the upstream license before installing or redistributing any result.
+Version 0.6.0 is a public beta. Review generated warnings and the upstream license before installing or redistributing any result.
 
 This is an independent open-source project. It is not affiliated with or endorsed by OpenAI or Anthropic.
 
@@ -21,10 +21,11 @@ As of 2026-08-29, [OpenAI's documented installation and testing path](https://de
 Agent Skills are published as repository directories, `npx skills add` commands, Claude Plugin entries, archives, and local folders. Those inputs do not all have the same boundaries or manifests. Agent Skill to Plugin normalizes them into one model, discovers valid `SKILL.md` files, pauses when a structural choice is genuinely ambiguous, and emits:
 
 - an OpenAI plugin directory containing only skills;
-- a local marketplace entry;
-- a ZIP with one top-level plugin directory;
+- a standard personal Marketplace registration for local runs;
 - JSON and Markdown conversion reports; and
 - a saved resolution that pins the source snapshot for a later selection turn.
+
+The converter also creates a deterministic ZIP for provenance and explicit distribution requests. Ordinary human-readable output shows it only with `--show-zip`. Versioned JSON output and the JSON conversion report retain `zip_path` and `zip_sha256`; the Markdown report and Skill response do not surface the archive unless it was explicitly requested.
 
 It does not translate Claude commands, agents, hooks, MCP servers, settings, or other non-Skill components into new behavior.
 
@@ -42,7 +43,7 @@ Install the Skill from the public repository:
 npx skills add H4M4CHi-ttr/agent-skill-to-plugin
 ```
 
-This `npx skills add` command is the sole supported end-user distribution path for Agent Skill to Plugin. The project does not publish a separate ZIP for installing this Skill. ZIPs produced by the converter are generated Plugin outputs, not installers for Agent Skill to Plugin itself.
+This `npx skills add` command is the sole supported end-user distribution path for Agent Skill to Plugin. The project does not publish a separate ZIP for installing this Skill. Archives produced by the converter are generated Plugin outputs, not installers for Agent Skill to Plugin itself, and are surfaced only when explicitly requested.
 
 `npx skills add` installs the Skill files but does not install `uv`. Once `uv` is available on a supported execution surface, the Skill invokes `uv run` itself. A person using the Skill from ChatGPT or Codex normally does not need to choose a Python version, install PyYAML, or enter `uv` commands.
 
@@ -68,13 +69,13 @@ On Windows PowerShell, replace `.venv/bin/python` above with `.venv\Scripts\pyth
 
 After installing the Agent Skill to Plugin Skill/Plugin in a supported surface:
 
-The converter itself still needs access to the referenced source and an execution environment that can run `uv` (recommended) or the Python fallback. An ordinary Chat conversation cannot be assumed to resolve a local path on your computer. Use a reachable GitHub/archive source, explicitly provide the files when the surface supports it, or run conversion in Work, Codex, or the CLI; then install and use the generated Plugin in Chat.
+The converter itself needs access to the referenced source, an execution environment that can run `uv` (recommended) or the Python fallback, and local filesystem access to register the result. An ordinary Chat-only or cloud execution context cannot be assumed to resolve a path on your computer or write `~/plugins` and `~/.agents/plugins/marketplace.json`. Use a reachable GitHub/archive source and run the conversion in a local Desktop/Codex or CLI context; then install and use the registered Plugin in Chat. A surface may also let you provide files explicitly, but that does not by itself grant access to your local personal Marketplace.
 
-1. Paste one install command, GitHub URL, or a local path that the current surface can access into the chat and ask to package it as an OpenAI plugin.
+1. Paste one install command, GitHub URL, or accessible local path into a local Desktop/Codex chat and ask to package it as an OpenAI plugin.
 2. The Skill writes that logical request to a UTF-8 input file and runs the tool with `--json`.
 3. If the response is `needs_selection`, choose by number, Skill name, path, or “all.” The Skill resumes from the saved resolution rather than fetching the branch again.
-4. Review the returned Skill list, warnings, provenance, JSON/Markdown reports, and generated Plugin ZIP SHA-256.
-5. Register the generated local Marketplace and install the resulting Plugin manually in a supported surface.
+4. The tool places the validated Plugin under `~/plugins/<plugin-name>` and adds it to `~/.agents/plugins/marketplace.json`. Grant filesystem permission if the local execution environment requests it.
+5. Review the returned Skill list, registration status, warnings, provenance, and JSON/Markdown reports, then install the resulting Plugin from the personal Marketplace in a supported surface.
 6. Open a new chat and explicitly invoke the imported Skill for its first functional test.
 
 This Skill is configured for explicit use because acquisition can access the network and execute local acquisition tools. It should not start implicitly from unrelated conversation.
@@ -124,6 +125,17 @@ The installed console entry point is equivalent:
 agent-skill-to-plugin run --input-file input.txt --output-root converted-skills-marketplace --json
 ```
 
+Local `run` and `convert` commands register a successful conversion in the standard personal Marketplace by default. The default file is auto-discovered, so do not add it with `codex plugin marketplace add`. Use `--no-register-personal` only for an intentionally workspace-only conversion. Registration makes the Plugin available in the Marketplace; it does not install or reinstall it. Use `--show-zip` only when you explicitly need the generated ZIP path in human-readable output; versioned JSON and the JSON conversion report retain artifact metadata for automation.
+
+If packaging succeeds but personal registration fails, retry only the registration after addressing the reported permission, lock, or collision issue:
+
+```bash
+agent-skill-to-plugin register-personal \
+  --plugin-dir converted-skills-marketplace/plugins/<plugin-name>
+```
+
+This does not resolve, package, install, or reinstall the Plugin again. Add `--force-personal` only after inspecting and explicitly authorizing replacement of divergent same-name personal state. The workspace-only `--force` flag does not authorize that home-directory replacement. A forced divergent update returns `status: "updated"`, `reinstall_required: true`, and `installation_performed: false`; reinstall the Plugin explicitly if an already-installed cached copy must pick up the new files.
+
 ## Supported inputs
 
 The parser accepts a request in a code block, inline code, Markdown link, or surrounding prose. One Claude Marketplace-add command plus one Plugin-install command is treated as one logical request.
@@ -167,7 +179,7 @@ claude plugin install skill-creator@claude-plugins-official
 
 Marketplace resolution order is: an inline marketplace-add source, read-only `claude plugin marketplace list --json`, the built-in known-safe map, then a bounded public GitHub search validated against both Marketplace and Plugin names. If the result is not unique, the tool asks for the Marketplace repository or URL.
 
-For a Claude Plugin, every valid Skill inside that Plugin boundary is included by default. Non-Skill Claude components are reported, not converted. Marketplace Plugin sources supported in 0.5.0 are relative paths, GitHub, Git, git-subdir, HTTPS archives, and npm registry packages. npm content is fetched from registry metadata and its tarball without invoking npm or lifecycle scripts. `command` sources are rejected.
+For a Claude Plugin, every valid Skill inside that Plugin boundary is included by default. Non-Skill Claude components are reported, not converted. Marketplace Plugin sources supported in 0.6.0 are relative paths, GitHub, Git, git-subdir, HTTPS archives, and npm registry packages. npm content is fetched from registry metadata and its tarball without invoking npm or lifecycle scripts. `command` sources are rejected.
 
 ### Local source
 
@@ -204,6 +216,8 @@ The saved resolution contains a fixed commit when the source is Git-backed, or a
 
 ## Generated output
 
+The workspace keeps a reviewable conversion record:
+
 ```text
 converted-skills-marketplace/
 ├── .agents/plugins/marketplace.json
@@ -220,23 +234,28 @@ converted-skills-marketplace/
     └── <resolution-id>.snapshot/
 ```
 
+For ordinary local `run` and `convert` operations, the validated Plugin is also registered at:
+
+```text
+~/plugins/<plugin-name>/
+~/.agents/plugins/marketplace.json
+```
+
+The archive under `packages/` is deterministic provenance output. Human-readable CLI output omits its path unless `--show-zip` is explicitly supplied, and the Markdown report and Skill response do not surface it unless the user asks for a ZIP/archive, distribution bundle, or offline transfer. Versioned JSON output and the JSON conversion report retain its path and SHA-256 regardless of presentation mode.
+
 Reports record normalized source information, requested and resolved refs, source and generated hashes, selected Skills, selection reasons, license evidence, external-reference handling, generated-copy compatibility adaptations, and compatibility/security diagnostics. License detection is evidence collection, not a legal conclusion.
 
-The tool does not modify its fixed source snapshot and rechecks the snapshot hash before conversion. The generated copy is normally byte-preserving, with narrow metadata exceptions observed against the OpenAI Plugin validator bundled with the local Codex environment on 2026-08-29: it normalizes a `...` front-matter closer to `---`; if a source Skill uses `disable-model-invocation: true`, it sets that field to `false` in the generated `SKILL.md` and writes `policy.allow_implicit_invocation: false` to `agents/openai.yaml` to express explicit-only invocation intent. This policy's behavior still needs verification on each ChatGPT/Codex surface and version. Existing agent metadata is reduced, when needed, to the 0.5.0 conservative allowlist: interface display/description/icons/color/default prompt, `policy.allow_implicit_invocation`, and `dependencies.tools`. Default prompts are made to mention `$skill-name`, icon paths must resolve inside the Plugin, and added/removed/changed metadata field paths are recorded without copying their values. Every changed file, reason, source hash, and generated hash is recorded under `compatibility_adaptations` in both reports.
+The tool does not modify its fixed source snapshot and rechecks the snapshot hash before conversion. The generated copy is normally byte-preserving, with narrow metadata exceptions observed against the OpenAI Plugin validator bundled with the local Codex environment on 2026-08-29: it normalizes a `...` front-matter closer to `---`; if a source Skill uses `disable-model-invocation: true`, it sets that field to `false` in the generated `SKILL.md` and writes `policy.allow_implicit_invocation: false` to `agents/openai.yaml` to express explicit-only invocation intent. This policy's behavior still needs verification on each ChatGPT/Codex surface and version. Existing agent metadata is reduced, when needed, to the 0.6.0 conservative allowlist: interface display/description/icons/color/default prompt, `policy.allow_implicit_invocation`, and `dependencies.tools`. Default prompts are made to mention `$skill-name`, icon paths must resolve inside the Plugin, and added/removed/changed metadata field paths are recorded without copying their values. Every changed file, reason, source hash, and generated hash is recorded under `compatibility_adaptations` in both reports.
 
-Existing output names are not overwritten by default. `--force` is an explicit replacement opt-in; otherwise a collision-safe name is chosen where supported.
+Existing workspace output names are not overwritten by default; `--force` is the explicit opt-in for replacing those workspace artifacts. Personal registration has a separate boundary: an identical registration is idempotent, while divergent same-name Plugin content or a conflicting Marketplace entry causes `output_conflict`. Only `--force-personal`, after inspecting the target and explicitly deciding to replace it, authorizes that personal-state replacement.
 
 ## Use the result in ChatGPT or Codex
 
-The current OpenAI plugin specification requires `.codex-plugin/plugin.json`; skills are placed under `skills/<name>/SKILL.md`. Register the generated local marketplace manually:
+The current OpenAI plugin specification requires `.codex-plugin/plugin.json`; skills are placed under `skills/<name>/SKILL.md`. A normal local conversion copies the validated Plugin to `~/plugins/<plugin-name>` and updates the standard personal Marketplace at `~/.agents/plugins/marketplace.json`. Codex discovers that file implicitly; do **not** run `codex plugin marketplace add` for this default path.
 
-```bash
-codex plugin marketplace add "<absolute-path-to-converted-skills-marketplace>"
-```
+Registration only makes the Plugin available in the personal Marketplace. It does not install or reinstall it. The result records `installation_performed: false`; a forced update also records `reinstall_required: true`. Install or, when flagged, reinstall the generated Plugin explicitly from that Marketplace in a supported ChatGPT/Codex surface. Restart the desktop app if the entry does not appear, open a new chat, and invoke the imported Skill explicitly for the first test. Local Marketplace availability varies by surface. See the [official OpenAI plugin documentation](https://developers.openai.com/plugins/build/plugins) for the current product workflow.
 
-Then install the generated Plugin from that marketplace in a supported ChatGPT/Codex surface. Restart the desktop app if the marketplace does not appear, open a new chat, and invoke the imported Skill explicitly for the first test. Local and repository marketplace availability varies by surface. See the [official OpenAI plugin documentation](https://developers.openai.com/plugins/build/plugins) for the current product workflow.
-
-Agent Skill to Plugin never runs marketplace registration, Plugin installation, publication, or home-directory changes for you.
+Agent Skill to Plugin does not run `codex plugin add`, install or reinstall a Plugin, publish, or push anything. Its intended durable home-directory changes are limited to the registered Plugin directory and the standard personal Marketplace file. Registration is coordinated with an ownership-checked lock and recovery journal under the personal Marketplace root, plus staged or backup Plugin trees under the personal Plugin root. Those support files are normally removed, but a failed cleanup or rollback can deliberately retain them with diagnostics so a later run does not guess at ownership or delete unknown data. A Chat-only/cloud context cannot perform this local registration; use a local Desktop/Codex or CLI execution context instead.
 
 ## Security model
 
@@ -283,7 +302,9 @@ Agent Skill to Plugin itself is licensed under Apache-2.0; that license does not
 
 `security_rejected`: inspect the diagnostic. Bypasses are intentionally not provided for command sources, credential-bearing URLs, unsafe paths, symlinks, or secret-like files.
 
-`output_conflict`: use a different `--output-root`, remove the conflicting artifact after review, or pass `--force` only when replacement is intended.
+`output_conflict`: for a workspace artifact, use a different `--output-root`, remove the conflict after review, or pass workspace-only `--force` when replacement is intended. For divergent same-name content under `~/plugins` or a conflicting personal Marketplace entry, inspect the reported state and use the separate `--force-personal` only after explicitly authorizing that replacement. `--force` never authorizes the personal replacement.
+
+If packaging completed but personal registration failed, keep the validated workspace Plugin and retry with `agent-skill-to-plugin register-personal --plugin-dir <generated-plugin-dir>` after resolving the reported permission, lock, journal, cleanup, or collision condition. A retained lock or recovery journal is evidence to inspect, not permission to delete it blindly. Use `--force-personal` only for an explicitly approved divergent-state replacement. Use `--no-register-personal` only when you intentionally want workspace artifacts without a personal Marketplace change.
 
 For Windows paths containing spaces, use `--input-file` or quote the path. If a relative path is ambiguous, set `--source-base` explicitly.
 

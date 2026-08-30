@@ -23,9 +23,7 @@ from agent_skill_to_plugin.resolvers.claude_plugin import (
 )
 from agent_skill_to_plugin.selection import select_candidates
 from agent_skill_to_plugin.utils import hash_tree
-
-
-FIXTURES = PROJECT_ROOT / "fixtures"
+from tests.helpers import FIXTURES
 
 
 def claude_input(

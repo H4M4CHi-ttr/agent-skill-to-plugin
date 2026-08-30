@@ -8,8 +8,8 @@ The trusted computing base includes the tool source; `uv`, its managed Python, a
 
 ## Protected assets
 
-- files outside the chosen output and temporary directories;
-- user home and existing Skill/Plugin installations;
+- files outside the chosen output and temporary directories, except the documented personal registration roots and their bounded lock, journal, staging, and backup state;
+- user home outside the standard personal Plugin and Marketplace roots, plus unrelated existing Skill/Plugin installations and Marketplace entries;
 - Git/SSH/npm/Claude credentials and private repository data;
 - integrity of the source snapshot across a multi-turn selection;
 - accuracy of generated provenance and hashes; and
@@ -53,7 +53,7 @@ public numeric addresses returned by that validation and uses the original
 hostname for TLS SNI/certificate verification, preventing a second DNS lookup
 from rebinding the request to a private target. Environment proxy variables are
 not used by this pinned transport; separately audited proxy support is outside
-the 0.5.0 contract. Network sandboxing remains recommended for defense in depth.
+the 0.6.0 contract. Network sandboxing remains recommended for defense in depth.
 
 ### Time-of-check/time-of-use substitution
 
@@ -63,7 +63,11 @@ The user can still deliberately replace tool code, interpreter behavior, or file
 
 ### Partial or destructive output
 
-Packaging occurs in a staging directory. Trees, manifests, ZIP contents, and size are validated before final placement. Existing artifacts are not silently overwritten. `--force` is a deliberate caller authorization and should be used only after inspecting the target.
+Packaging occurs in a staging directory. Trees, manifests, ZIP contents, and size are validated before final placement. Personal registration separately coordinates the Plugin tree and Marketplace file with an ownership-checked lock, a recovery journal, observed-state rechecks, and staged or backup trees. Unrelated Marketplace root metadata, entry order, and entries are preserved. Cleanup and rollback are best effort across these filesystem operations: when safe recovery cannot complete, the tool retains attributable lock, journal, or backup state and reports it rather than claiming cross-file atomicity or deleting unknown data.
+
+Existing artifacts are not silently overwritten. An identical personal Plugin plus the expected entry is an idempotent success. Missing halves of an otherwise matching registration may be repaired, but divergent same-name Plugin content or a conflicting entry fails with `output_conflict`. Only `--force-personal` is a deliberate caller authorization for that personal replacement, and it should be used only after inspecting the target; workspace `--force` never grants it. Symbolic links, reparse points, duplicate entries, and malformed Marketplace data fail closed.
+
+Personal registration is the only default workflow that writes under the user's home directory. Its intended durable changes are the registered Plugin directory and standard personal Marketplace file; its bounded support state can include an owner lock, recovery journal, and temporary stage or backup under those personal roots, which may be retained when cleanup or rollback is incomplete. Registration does not run `codex plugin add`, install or reinstall a Plugin, publish, push, or register a non-default Marketplace. `--no-register-personal` is the explicit workspace-only mode. When the execution environment requires filesystem approval for home writes, the caller must obtain it before registration.
 
 ## Validation policy
 
@@ -71,7 +75,7 @@ The current centralized policy includes conservative limits for file count, byte
 
 ## Generated-copy metadata adaptation
 
-Remote instructions are never rewritten or executed. Packaging may mechanically normalize format metadata in the generated copy: a `...` front-matter closer becomes `---`; `disable-model-invocation: true` becomes `false`, while `policy.allow_implicit_invocation: false` expresses explicit-only invocation intent. Existing `agents/openai.yaml` fields outside the conservative 0.5.0 allowlist are omitted, default prompts must name the Skill token, and icon paths must stay inside the Plugin. The tool leaves the fixed source snapshot unchanged and revalidates its hash; changed field paths, source/generated hashes, and reasons are included in the report so these exceptions cannot be silent. Invocation behavior still requires verification on each product surface and version.
+Remote instructions are never rewritten or executed. Packaging may mechanically normalize format metadata in the generated copy: a `...` front-matter closer becomes `---`; `disable-model-invocation: true` becomes `false`, while `policy.allow_implicit_invocation: false` expresses explicit-only invocation intent. Existing `agents/openai.yaml` fields outside the conservative 0.6.0 allowlist are omitted, default prompts must name the Skill token, and icon paths must stay inside the Plugin. The tool leaves the fixed source snapshot unchanged and revalidates its hash; changed field paths, source/generated hashes, and reasons are included in the report so these exceptions cannot be silent. Invocation behavior still requires verification on each product surface and version.
 
 Front matter uses PyYAML safe loading with duplicate/shape/type checks around the accepted manifest. A parse failure is reported with its path; it is not silently ignored.
 
@@ -84,7 +88,8 @@ A successful result means:
 - acquisition and packaging completed under the implemented policy;
 - the selected `SKILL.md` manifests were structurally valid;
 - the packaged files passed static path/content checks; and
-- the recorded hashes matched the generated artifacts.
+- the recorded hashes matched the generated artifacts; and
+- unless `--no-register-personal` was explicitly selected, the validated Plugin and expected entry were present in the standard personal Marketplace.
 
 It does not mean:
 
@@ -99,8 +104,9 @@ It does not mean:
 - Prefer commit-pinned and well-maintained upstream sources.
 - Review `SKILL.md`, scripts, references, license evidence, and every warning.
 - Use a network-restricted environment when processing unknown sources.
-- Keep the JSON report and SHA-256 alongside a distributed ZIP.
+- When a ZIP is explicitly requested for distribution or offline transfer, keep its JSON report and SHA-256 alongside it.
 - Test a new Plugin in a new, low-privilege chat before broader use.
-- Do not pass `--force` in unattended automation without a separate output-retention policy.
+- Keep workspace `--force` and personal-registration `--force-personal` as separate approvals; do not pass either in unattended automation without the corresponding retention policy.
+- If packaging succeeded but personal registration failed, inspect the returned lock, journal, cleanup, or collision details and retry only registration with `register-personal --plugin-dir <generated-plugin-dir>`; do not delete retained recovery state by guessing ownership.
 
 See [SECURITY.md](../SECURITY.md) for private vulnerability reporting.

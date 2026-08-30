@@ -16,7 +16,7 @@ class MarkdownReportingSafetyTests(unittest.TestCase):
             "zip_path": "package.zip",
             "marketplace_root": "root",
             "marketplace_file": "marketplace.json",
-            "marketplace_add_command": "codex plugin marketplace add root",
+            "marketplace_add_command": "codex plugin marketplace add attacker-controlled-root",
             "provenance": {
                 "tool_version": "0.5.0",
                 "input_kind": "local",
@@ -41,6 +41,9 @@ class MarkdownReportingSafetyTests(unittest.TestCase):
         self.assertNotIn("\n# forged\n", rendered)
         self.assertIn(r"\# forged \[link\]\(https://attacker\.invalid\)", rendered)
         self.assertIn("`` path`with`ticks ``", rendered)
+        self.assertNotIn("ZIP", rendered)
+        self.assertNotIn("marketplace_add_command", rendered)
+        self.assertNotIn("codex plugin marketplace add", rendered)
 
 
 if __name__ == "__main__":

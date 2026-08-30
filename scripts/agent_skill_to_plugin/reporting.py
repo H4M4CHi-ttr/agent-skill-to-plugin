@@ -42,7 +42,6 @@ def render_markdown(report: dict[str, Any]) -> str:
         f"- Original plugin: {_markdown_code(provenance.get('original_plugin_name') or 'not applicable')}",
         f"- Source snapshot SHA-256: {_markdown_code(provenance.get('source_snapshot_sha256', ''))}",
         f"- Generated plugin tree SHA-256: {_markdown_code(report['plugin_tree_sha256'])}",
-        f"- ZIP SHA-256: {_markdown_code(report['zip_sha256'])}",
         "",
         "## Bundled skills",
         "",
@@ -107,17 +106,84 @@ def render_markdown(report: dict[str, Any]) -> str:
             lines.append(f"- **{severity} / {code}**{path}: {message}")
     else:
         lines.append("- No static warnings were detected. This is not a trust or behavioral guarantee.")
+    lines.extend(["", "## Personal Marketplace registration", ""])
+    registration = report.get("personal_marketplace")
+    if isinstance(registration, dict):
+        status = registration.get("status", "unknown")
+        lines.append(f"- Status: {_markdown_code(status)}")
+        if status == "failed":
+            retry = registration.get("registration_retry")
+            failed_lines = [
+                f"- Error code: {_markdown_code(registration.get('error_code', 'unknown'))}",
+                f"- Error: {_markdown_text(registration.get('error', 'Personal registration did not complete.'))}",
+            ]
+            if registration.get("failure_state"):
+                failed_lines.append(f"- Failure state: {_markdown_code(registration['failure_state'])}")
+            if registration.get("lock_path"):
+                failed_lines.append(f"- Lock retained at: {_markdown_code(registration['lock_path'])}")
+            if registration.get("backup_path"):
+                failed_lines.append(f"- Backup retained at: {_markdown_code(registration['backup_path'])}")
+            if registration.get("recovery"):
+                failed_lines.append(f"- Recovery: {_markdown_text(registration['recovery'])}")
+            lines.extend(failed_lines)
+            if isinstance(retry, dict) and retry.get("plugin_dir"):
+                lines.extend([
+                    "",
+                    "Personal Marketplace registration did not complete. The validated workspace Plugin remains available for an explicit `register-personal` retry after the reported condition is resolved.",
+                ])
+                force_suffix = " --force-personal" if retry.get("force_personal_required") else ""
+                lines.append(
+                    "Retry: "
+                    + _markdown_code(
+                        "agent-skill-to-plugin register-personal --plugin-dir "
+                        f'"{retry["plugin_dir"]}"{force_suffix}'
+                    )
+                )
+            else:
+                lines.extend([
+                    "",
+                    "Personal Marketplace registration did not complete and retained recovery state requires inspection before any retry. The validated workspace Plugin remains available.",
+                ])
+        elif registration.get("commit_durable"):
+            lines.extend([
+                f"- Error code: {_markdown_code(registration.get('error_code', 'unknown'))}",
+                f"- Error: {_markdown_text(registration.get('error', 'Personal registration needs recovery review.'))}",
+                f"- Durable commit: {_markdown_code(str(bool(registration.get('commit_durable'))).lower())}",
+                f"- Commit verified: {_markdown_code(str(bool(registration.get('commit_verified'))).lower())}",
+                f"- Lock retained at: {_markdown_code(registration.get('lock_path', 'unknown'))}",
+                f"- Recovery: {_markdown_text(registration.get('recovery', 'Inspect the retained lock and transaction journal before retrying.'))}",
+                "",
+                "The personal Marketplace may already contain the new Plugin state. Inspect the retained recovery metadata before retrying; no installation or reinstallation was performed.",
+            ])
+        else:
+            lines.extend([
+                f"- Marketplace: {_markdown_code(registration.get('marketplace_name', 'personal'))}",
+                f"- Plugin directory: {_markdown_code(registration.get('plugin_dir', 'unknown'))}",
+                f"- Marketplace file: {_markdown_code(registration.get('marketplace_file', 'unknown'))}",
+                f"- Installation policy: {_markdown_code(registration.get('policy_installation', 'AVAILABLE'))}",
+                f"- Authentication policy: {_markdown_code(registration.get('policy_authentication', 'ON_INSTALL'))}",
+                f"- Category: {_markdown_code(registration.get('category', 'Productivity'))}",
+                f"- Plugin installation performed: {_markdown_code(str(bool(registration.get('installation_performed', False))).lower())}",
+                f"- Reinstallation required: {_markdown_code(str(bool(registration.get('reinstall_required', False))).lower())}",
+                f"- View: {_markdown_code(registration.get('view_url', 'unavailable'))}",
+                f"- Share: {_markdown_code(registration.get('share_url', 'unavailable'))}",
+                "",
+                "The Plugin was registered in the personal Marketplace. Plugin installation or reinstallation, publication, and repository push were not performed.",
+            ])
+            if registration.get("reinstall_required"):
+                lines.append(
+                    "An existing personal Plugin registration was updated. Reinstall it explicitly before expecting an already-installed cached copy to use the new files."
+                )
+    else:
+        lines.append("- Personal Marketplace registration was disabled for this conversion.")
+
     lines.extend([
         "",
-        "## Generated artifacts",
+        "## Workspace artifacts",
         "",
-        f"- Plugin directory: {_markdown_code(report['plugin_dir'])}",
-        f"- ZIP: {_markdown_code(report['zip_path'])}",
-        f"- Marketplace root: {_markdown_code(report['marketplace_root'])}",
-        f"- Marketplace file: {_markdown_code(report['marketplace_file'])}",
-        f"- Register manually: {_markdown_code(report['marketplace_add_command'])}",
-        "",
-        "The tool did not register the marketplace, install the plugin, modify a user home directory, or publish anything.",
+        f"- Validated Plugin copy: {_markdown_code(report['plugin_dir'])}",
+        f"- Conversion workspace: {_markdown_code(report['marketplace_root'])}",
+        f"- Workspace Marketplace file: {_markdown_code(report['marketplace_file'])}",
         "",
     ])
     return "\n".join(lines)

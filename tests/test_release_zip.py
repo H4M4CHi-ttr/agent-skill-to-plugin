@@ -14,9 +14,18 @@ if _SPEC is None or _SPEC.loader is None:  # pragma: no cover - import machinery
 _MODULE = importlib.util.module_from_spec(_SPEC)
 _SPEC.loader.exec_module(_MODULE)
 build_skill_zip = _MODULE.build_skill_zip
+PROJECT_ROOT = _SCRIPT.parents[1]
 
 
 class SkillArchiveTests(unittest.TestCase):
+    def test_repository_exposes_only_the_root_skill_manifest(self) -> None:
+        manifests = sorted(
+            path.relative_to(PROJECT_ROOT).as_posix()
+            for path in PROJECT_ROOT.rglob("SKILL.md")
+            if ".git" not in path.relative_to(PROJECT_ROOT).parts
+        )
+        self.assertEqual(["SKILL.md"], manifests)
+
     def test_skill_archive_is_deterministic_single_root_and_excludes_caches(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             base = Path(temporary)

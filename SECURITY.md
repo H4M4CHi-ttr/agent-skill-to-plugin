@@ -56,7 +56,7 @@ adaptations: a `...` front-matter closer becomes `---`, and an ordinary
 top-level `disable-model-invocation: true` scalar is changed to `false`, while
 `policy.allow_implicit_invocation: false` is emitted to express the source's
 explicit-only intent. Existing agent metadata is filtered through the
-documented 0.5.0 conservative allowlist. Default prompts must name the Skill
+documented 0.6.0 conservative allowlist. Default prompts must name the Skill
 token and icon paths must resolve inside the generated Plugin. Every adapted file, reason, source
 hash, and generated hash must appear in `compatibility_adaptations`; the
 operation fails closed when it cannot make this narrow change safely. The

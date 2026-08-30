@@ -209,6 +209,23 @@ class Provenance:
 
 
 @dataclass(frozen=True)
+class PersonalMarketplaceRegistration:
+    """The durable result of registering one plugin in the personal Marketplace."""
+
+    status: str
+    marketplace_name: str
+    marketplace_file: str
+    plugin_dir: str
+    policy_installation: str
+    policy_authentication: str
+    category: str
+    reinstall_required: bool
+    installation_performed: bool
+    view_url: str
+    share_url: str
+
+
+@dataclass(frozen=True)
 class ConversionResult:
     plugin_name: str
     plugin_dir: str
@@ -216,12 +233,12 @@ class ConversionResult:
     zip_sha256: str
     marketplace_root: str
     marketplace_file: str
-    marketplace_add_command: str
     report_json: str
     report_markdown: str
     skills: tuple[SelectedSkill, ...]
     provenance: Provenance
     plugin_tree_sha256: str
+    personal_marketplace: PersonalMarketplaceRegistration | None = None
     warnings: tuple[str, ...] = ()
     schema_version: str = SCHEMA_VERSION
 

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 import json
 from pathlib import Path
 import shutil
@@ -14,9 +14,17 @@ from .discovery import discover_skills
 from .errors import SkillToPluginError
 from .input_parser import parse_input
 from .limits import DEFAULT_PLUGIN_VERSION, DEFAULT_TIMEOUT_SECONDS
-from .models import ConversionResult, Diagnostic, ParsedInput, ResolutionState
+from .models import (
+    ConversionResult,
+    Diagnostic,
+    ParsedInput,
+    PersonalMarketplaceRegistration,
+    ResolutionState,
+)
 from .packaging import package_selected
+from .personal_marketplace import register_personal_plugin
 from .provenance import build_provenance, detect_licenses
+from .reporting import write_reports
 from .resolver_registry import ResolverRegistry
 from .selection import (
     SelectionDecision,
@@ -25,7 +33,7 @@ from .selection import (
     selected_skills_from_candidates,
     validate_selected_references,
 )
-from .utils import atomic_write_json, ensure_within, utc_now
+from .utils import atomic_write_json, ensure_within, sanitize_text, utc_now
 
 
 @dataclass(frozen=True)
@@ -43,6 +51,79 @@ class ResolutionOutcome:
         }
         data["diagnostics"] = [asdict(item) for item in diagnostics.values()]
         return data
+
+
+@dataclass(frozen=True)
+class RegistrationOutcome:
+    registration: PersonalMarketplaceRegistration
+    warnings: tuple[str, ...] = ()
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "plugin_name": Path(self.registration.plugin_dir).name,
+            "personal_marketplace": asdict(self.registration),
+            "warnings": list(self.warnings),
+        }
+
+
+def _write_registration_report(
+    json_path: Path,
+    markdown_path: Path,
+    registration: dict[str, Any],
+) -> str | None:
+    try:
+        report = json.loads(json_path.read_text(encoding="utf-8"))
+        if not isinstance(report, dict):
+            raise ValueError("conversion report root is not an object")
+        report["personal_marketplace"] = registration
+        write_reports(json_path, markdown_path, report)
+    except Exception as exc:
+        return (
+            "The Personal Marketplace outcome could not be recorded in the "
+            f"workspace reports: {type(exc).__name__}."
+        )
+    return None
+
+
+def _record_result_registration(
+    result: ConversionResult,
+    registration: dict[str, Any],
+) -> str | None:
+    return _write_registration_report(
+        Path(result.report_json),
+        Path(result.report_markdown),
+        registration,
+    )
+
+
+def register_plugin_directory(
+    plugin_dir: Path,
+    *,
+    force_personal: bool = False,
+    personal_home: Path | None = None,
+) -> RegistrationOutcome:
+    """Retry or perform personal registration for an already generated Plugin."""
+
+    registration = register_personal_plugin(
+        plugin_dir,
+        force=force_personal,
+        home=personal_home,
+    )
+    warnings: list[str] = []
+    resolved_plugin = plugin_dir.resolve()
+    if resolved_plugin.parent.name == "plugins":
+        output_root = resolved_plugin.parent.parent
+        report_json = output_root / "reports" / f"{resolved_plugin.name}.json"
+        report_markdown = output_root / "reports" / f"{resolved_plugin.name}.md"
+        if report_json.is_file() and report_markdown.is_file():
+            warning = _write_registration_report(
+                report_json,
+                report_markdown,
+                asdict(registration),
+            )
+            if warning:
+                warnings.append(warning)
+    return RegistrationOutcome(registration=registration, warnings=tuple(warnings))
 
 
 def _source_diagnostics(resolved_source: Any) -> tuple[Diagnostic, ...]:
@@ -156,6 +237,9 @@ def convert_resolution(
     author_name: str = "Local conversion",
     version: str = DEFAULT_PLUGIN_VERSION,
     force: bool = False,
+    register_personal: bool = False,
+    force_personal: bool = False,
+    personal_home: Path | None = None,
 ) -> ConversionResult | ResolutionOutcome:
     state, decision = resume_selection(resolution_file, selected=selected)
     if decision.needs_selection:
@@ -231,7 +315,7 @@ def convert_resolution(
     for diagnostic in diagnostics:
         unique_diagnostics[(diagnostic.code, diagnostic.path, diagnostic.message)] = diagnostic
 
-    return package_selected(
+    result = package_selected(
         state,
         decision.selected,
         output_root=Path(state.output_root),
@@ -245,6 +329,59 @@ def convert_resolution(
         version=version,
         force=force,
     )
+    if not register_personal:
+        return result
+
+    try:
+        registration = register_personal_plugin(
+            Path(result.plugin_dir),
+            force=force_personal,
+            home=personal_home,
+        )
+    except SkillToPluginError as exc:
+        registration_status = str(exc.details.setdefault("registration_status", "failed"))
+        commit_durable = bool(exc.details.get("commit_durable", False))
+        recovery_state_retained = bool(exc.details.get("lock_retained", False))
+        exc.details.setdefault("generated_plugin_dir", result.plugin_dir)
+        if not commit_durable and not recovery_state_retained:
+            exc.details.setdefault(
+                "registration_retry",
+                {
+                    "subcommand": "register-personal",
+                    "plugin_dir": result.plugin_dir,
+                    "force_personal_required": exc.code == "output_conflict",
+                },
+            )
+        report_registration: dict[str, Any] = {
+            "status": registration_status if commit_durable else "failed",
+            "error_code": exc.code,
+            "error": sanitize_text(exc.message),
+            "plugin_dir": result.plugin_dir,
+            "commit_durable": commit_durable,
+            "commit_verified": bool(exc.details.get("commit_verified", False)),
+            "installation_performed": bool(exc.details.get("installation_performed", False)),
+            "reinstall_required": bool(exc.details.get("reinstall_required", False)),
+        }
+        if not commit_durable and registration_status != "failed":
+            report_registration["failure_state"] = registration_status
+        if "registration_retry" in exc.details:
+            report_registration["registration_retry"] = exc.details["registration_retry"]
+        for key in ("lock_path", "backup_path", "recovery", "rollback_errors"):
+            if key in exc.details:
+                report_registration[key] = exc.details[key]
+        warning = _record_result_registration(
+            result,
+            report_registration,
+        )
+        if warning:
+            exc.details.setdefault("report_update_warning", warning)
+        raise
+
+    result = replace(result, personal_marketplace=registration)
+    warning = _record_result_registration(result, asdict(registration))
+    if warning:
+        result = replace(result, warnings=tuple(dict.fromkeys((*result.warnings, warning))))
+    return result
 
 
 def run_request(
@@ -258,6 +395,9 @@ def run_request(
     author_name: str = "Local conversion",
     version: str = DEFAULT_PLUGIN_VERSION,
     force: bool = False,
+    register_personal: bool = False,
+    force_personal: bool = False,
+    personal_home: Path | None = None,
     registry: ResolverRegistry | None = None,
 ) -> ConversionResult | ResolutionOutcome:
     outcome = resolve_request(
@@ -276,4 +416,7 @@ def run_request(
         author_name=author_name,
         version=version,
         force=force,
+        register_personal=register_personal,
+        force_personal=force_personal,
+        personal_home=personal_home,
     )

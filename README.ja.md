@@ -2,9 +2,9 @@
 
 [English](README.md)
 
-Agent Skill to Pluginは、複数のAgent Skills環境から既存の有効な`SKILL.md`を安全寄りの手順で解決し、OpenAI skills-only pluginへ梱包するSkill変換・梱包ツールです。取得元の解決、固定スナップショット、決定的な候補選択、検証、来歴、梱包、レポートを分離し、リモートコンテンツは常に信頼できないデータとして扱います。
+Agent Skill to Pluginは、複数のAgent Skills環境から既存の有効な`SKILL.md`を安全寄りの手順で解決し、OpenAI skills-only pluginへ梱包して標準の個人用Marketplaceへ登録するツールです。取得元の解決、固定スナップショット、決定的な候補選択、検証、来歴、梱包、登録、レポートを分離し、リモートコンテンツは常に信頼できないデータとして扱います。
 
-バージョン0.5.0は公開ベータです。生成された警告と元ライセンスを確認してから、インストールまたは再配布してください。
+バージョン0.6.0は公開ベータです。生成された警告と元ライセンスを確認してから、インストールまたは再配布してください。
 
 本ツールは独立したオープンソースプロジェクトであり、OpenAIまたはAnthropicの公式・提携製品ではありません。
 
@@ -21,10 +21,11 @@ Agent Skill to Pluginは、複数のAgent Skills環境から既存の有効な`S
 Agent Skillは、リポジトリ内のディレクトリ、`npx skills add`、Claude Plugin、アーカイブ、ローカルフォルダーなど、異なる形で配布されています。本ツールはこれらを共通モデルへ正規化し、有効な`SKILL.md`を発見します。構造上の候補が一意でなければ選択を要求し、次を生成します。
 
 - Skillだけを含むOpenAI Pluginディレクトリ
-- ローカルMarketplace
-- トップレベルPluginディレクトリが一つだけのZIP
+- ローカル実行時の標準個人用Marketplace登録
 - JSON／Markdown変換レポート
 - 次ターンの選択にも同じ取得物を使う固定済みResolution
+
+来歴と明示的な配布依頼のため、決定的なZIPも内部生成します。通常の人間向け出力で表示するのは`--show-zip`を指定した場合だけです。バージョン付きJSON出力とJSON変換レポートには`zip_path`と`zip_sha256`を常に残しますが、MarkdownレポートとSkillの応答では明示的に求められない限り提示しません。
 
 Claudeのcommands、agents、hooks、MCP、settingsなど、Skillではない機能を新しいSkillへ意味変換しません。
 
@@ -42,7 +43,7 @@ Claudeのcommands、agents、hooks、MCP、settingsなど、Skillではない機
 npx skills add H4M4CHi-ttr/agent-skill-to-plugin
 ```
 
-この`npx skills add`コマンドを、Agent Skill to Plugin本体の唯一の利用者向け配布経路とします。本Skillをインストールするための別個のZIPは公開しません。変換ツールが生成するZIPは変換後のPlugin成果物であり、Agent Skill to Plugin本体のインストーラーではありません。
+この`npx skills add`コマンドを、Agent Skill to Plugin本体の唯一の利用者向け配布経路とします。本Skillをインストールするための別個のZIPは公開しません。変換ツールが生成するアーカイブは変換後のPlugin成果物であり、Agent Skill to Plugin本体のインストーラーではありません。明示的に必要とされた場合だけ提示します。
 
 `npx skills add`はSkillファイルをインストールしますが、`uv`自体はインストールしません。対応する実行画面で`uv`が利用できれば、Skillが内部で`uv run`を実行します。通常、ChatGPTやCodexからSkillを利用する人がPythonバージョンを選んだり、PyYAMLを導入したり、`uv`コマンドを入力したりする必要はありません。
 
@@ -64,13 +65,13 @@ Windows PowerShellでは上記`.venv/bin/python`を`.venv\Scripts\python.exe`へ
 
 対応する画面へAgent Skill to Plugin Skill／Pluginをインストールした後の流れです。
 
-変換ツール自体には、参照する取得元へのアクセスと、`uv`（推奨）またはPython代替経路を実行できる環境が必要です。通常のChatからユーザーPC上のローカルパスを解決できるとは限りません。到達可能なGitHub／アーカイブを使う、画面が対応する場合は必要なファイルを明示的に提供する、またはWork、Codex、CLIで変換してください。生成したPluginは、その後Chatへインストールして利用できます。
+変換ツール自体には、参照する取得元へのアクセス、`uv`（推奨）またはPython代替経路を実行できる環境、登録先へのローカルファイルアクセスが必要です。通常のChatだけ、またはクラウド実行環境からは、ユーザーPC上のパスを解決したり、`~/plugins`と`~/.agents/plugins/marketplace.json`へ書き込んだりできるとは限りません。到達可能なGitHub／アーカイブを使い、ローカルのDesktop／CodexまたはCLIで変換してください。画面によってはファイルを明示提供できますが、それだけでPC上の個人用Marketplaceへアクセスできるわけではありません。登録後のPluginはChatへインストールして利用できます。
 
-1. 一つのインストールコマンド、GitHub URL、または現在の画面からアクセスできるローカルパスをChatへ貼り、変換を依頼します。
+1. 一つのインストールコマンド、GitHub URL、またはアクセス可能なローカルパスをローカルDesktop／CodexのChatへ貼り、変換を依頼します。
 2. Skillが論理的依頼をUTF-8入力ファイルへ保存し、`--json`付きでツールを実行します。
 3. `needs_selection`なら、番号、Skill名、パス、または「すべて」で選びます。Skillはブランチを再取得せず、保存済みResolutionから再開します。
-4. Skill一覧、警告、来歴、JSON／Markdownレポート、生成されたPlugin ZIPのSHA-256を確認します。
-5. 生成したローカルMarketplaceを手動登録し、対応する画面からPluginをインストールします。
+4. ツールが検証済みPluginを`~/plugins/<plugin-name>`へ配置し、`~/.agents/plugins/marketplace.json`へ追加します。ローカル実行環境が要求した場合は、ファイル書込権限を許可します。
+5. Skill一覧、登録状態、警告、来歴、JSON／Markdownレポートを確認し、対応する画面から個人用MarketplaceのPluginをインストールします。
 6. 新しいChatを開き、最初の動作確認では取り込んだSkillを明示的に呼び出します。
 
 このSkillはネットワーク取得とローカル取得ツールの実行を伴うため、明示呼び出し用に設定します。無関係な会話から暗黙に開始すべきではありません。
@@ -116,6 +117,21 @@ uv run scripts/skill_to_plugin.py resolve \
 
 インストール後の`agent-skill-to-plugin`コマンドも同じ機能です。
 
+```bash
+agent-skill-to-plugin run --input-file input.txt --output-root converted-skills-marketplace --json
+```
+
+ローカルの`run`と`convert`は、成功した変換を標準の個人用Marketplaceへデフォルトで登録します。このファイルは自動検出されるため、`codex plugin marketplace add`で追加しないでください。意図的にワークスペース生成物だけを作る場合は`--no-register-personal`を使います。登録はMarketplaceから選べる状態にする処理であり、Pluginのインストール／再インストールではありません。人間向け出力に生成ZIPのパスが明示的に必要な場合だけ`--show-zip`を使います。バージョン付きJSONとJSON変換レポートは自動化用の成果物メタデータを保持します。
+
+梱包に成功した後で個人用登録だけが失敗した場合は、報告された権限、lock、競合を解決してから登録だけを再試行します。
+
+```bash
+agent-skill-to-plugin register-personal \
+  --plugin-dir converted-skills-marketplace/plugins/<plugin-name>
+```
+
+このコマンドは、取得元の再解決、再梱包、Pluginのインストール／再インストールを行いません。個人用領域にある同名の異なる内容を調べ、置換を明示承認した場合だけ`--force-personal`を追加します。ワークスペース用の`--force`は、ホームディレクトリ側の置換を許可しません。異なる内容を強制更新した結果は`status: "updated"`、`reinstall_required: true`、`installation_performed: false`を返します。すでにインストール済みのキャッシュへ新しいファイルを反映する必要があれば、Pluginを明示的に再インストールします。
+
 ## 対応入力
 
 コードブロック、インラインコード、Markdownリンク、通常の文章に含まれる入力を解析します。一つのMarketplace追加コマンドと一つのPluginインストールコマンドは、一つのClaude Plugin依頼として扱います。
@@ -159,7 +175,7 @@ claude plugin install skill-creator@claude-plugins-official
 
 Marketplaceは、同じ入力のmarketplace add、読取専用の`claude plugin marketplace list --json`、既知の安全な対応表、Marketplace名とPlugin名の両方を検証する限定的なGitHub公開検索、の順で解決します。一意でなければMarketplaceのリポジトリまたはURLを求めます。
 
-Claude PluginはPlugin単位の指定なので、その境界に含まれる有効なSkillをデフォルトですべて一つのOpenAI Pluginへ含めます。非Skillコンポーネントはレポートするだけです。0.5.0では、相対パス、GitHub、Git、git-subdir、HTTPSアーカイブ、npmレジストリのPlugin sourceに対応します。npmはレジストリメタデータとtarballを直接取得し、npmやlifecycle scriptを実行しません。`command` sourceは拒否します。
+Claude PluginはPlugin単位の指定なので、その境界に含まれる有効なSkillをデフォルトですべて一つのOpenAI Pluginへ含めます。非Skillコンポーネントはレポートするだけです。0.6.0では、相対パス、GitHub、Git、git-subdir、HTTPSアーカイブ、npmレジストリのPlugin sourceに対応します。npmはレジストリメタデータとtarballを直接取得し、npmやlifecycle scriptを実行しません。`command` sourceは拒否します。
 
 ### ローカルソース
 
@@ -196,6 +212,8 @@ ResolutionにはGit取得元なら固定commit、その他は取得物のハッ�
 
 ## 生成物
 
+ワークスペースには確認可能な変換記録を残します。
+
 ```text
 converted-skills-marketplace/
 ├── .agents/plugins/marketplace.json
@@ -212,23 +230,28 @@ converted-skills-marketplace/
     └── <resolution-id>.snapshot/
 ```
 
+通常のローカル`run`／`convert`では、検証済みPluginを次の場所にも登録します。
+
+```text
+~/plugins/<plugin-name>/
+~/.agents/plugins/marketplace.json
+```
+
+`packages/`配下のアーカイブは決定的な来歴用生成物です。人間向けCLI出力では、`--show-zip`を明示しない限りパスを表示しません。MarkdownレポートとSkillの応答でも、ユーザーがZIP／アーカイブ、配布バンドル、オフライン転送を求めた場合以外は提示しません。バージョン付きJSON出力とJSON変換レポートには、表示方法にかかわらずパスとSHA-256を保持します。
+
 レポートには、正規化した取得元、要求ref／固定commit、取得物と生成物のハッシュ、Skill一覧、選択理由、ライセンス根拠、外部参照の処理、生成コピーへの互換性調整、互換性／セキュリティ診断を記録します。ライセンス検出は証拠収集であり、法的判断ではありません。
 
-ツールは固定取得元スナップショットを変更せず、変換前にそのハッシュを再検証します。生成コピーも原則そのまま保持しますが、2026-08-29にローカルCodex環境同梱のOpenAI Pluginバリデータで観測したメタデータ差には限定的な例外があります。Front Matter終端`...`は`---`へ正規化します。取得元Skillが`disable-model-invocation: true`を使う場合、生成`SKILL.md`では`false`へ変更し、明示呼び出し限定の意図を表すため`agents/openai.yaml`へ`policy.allow_implicit_invocation: false`を書きます。このポリシーの実際の挙動はChatGPT／Codexの各画面・バージョンで別途確認が必要です。既存agent metadataも必要な場合、0.5.0の保守的allowlist（interfaceの表示／説明／icon／色／default prompt、`policy.allow_implicit_invocation`、`dependencies.tools`）へ限定します。default promptには`$skill-name`を含め、icon pathはPlugin内の実在ファイルに限定し、追加／削除／変更したfield pathを値なしで記録します。変更ファイル、理由、取得元ハッシュ、生成後ハッシュはJSON／Markdown両レポートの`compatibility_adaptations`へ記録します。
+ツールは固定取得元スナップショットを変更せず、変換前にそのハッシュを再検証します。生成コピーも原則そのまま保持しますが、2026-08-29にローカルCodex環境同梱のOpenAI Pluginバリデータで観測したメタデータ差には限定的な例外があります。Front Matter終端`...`は`---`へ正規化します。取得元Skillが`disable-model-invocation: true`を使う場合、生成`SKILL.md`では`false`へ変更し、明示呼び出し限定の意図を表すため`agents/openai.yaml`へ`policy.allow_implicit_invocation: false`を書きます。このポリシーの実際の挙動はChatGPT／Codexの各画面・バージョンで別途確認が必要です。既存agent metadataも必要な場合、0.6.0の保守的allowlist（interfaceの表示／説明／icon／色／default prompt、`policy.allow_implicit_invocation`、`dependencies.tools`）へ限定します。default promptには`$skill-name`を含め、icon pathはPlugin内の実在ファイルに限定し、追加／削除／変更したfield pathを値なしで記録します。変更ファイル、理由、取得元ハッシュ、生成後ハッシュはJSON／Markdown両レポートの`compatibility_adaptations`へ記録します。
 
-既存出力はデフォルトで上書きしません。`--force`は明示的な置換オプトインです。
+既存のワークスペース出力はデフォルトで上書きしません。`--force`は、そのワークスペース生成物を置き換えるためだけの明示的なオプトインです。個人用登録は別の境界です。同一内容なら冪等な成功として扱い、同名Pluginの内容またはMarketplace entryが異なる場合は`output_conflict`になります。個人用状態を確認し、置換を明示的に決めた場合だけ`--force-personal`で許可します。
 
 ## ChatGPT／Codexで使う
 
-現行OpenAI Plugin仕様では`.codex-plugin/plugin.json`が必要で、Skillは`skills/<name>/SKILL.md`へ配置します。生成したローカルMarketplaceを手動登録します。
+現行OpenAI Plugin仕様では`.codex-plugin/plugin.json`が必要で、Skillは`skills/<name>/SKILL.md`へ配置します。通常のローカル変換は、検証済みPluginを`~/plugins/<plugin-name>`へコピーし、標準の個人用Marketplace `~/.agents/plugins/marketplace.json`を更新します。Codexはこのファイルを暗黙に検出するため、このデフォルト経路では`codex plugin marketplace add`を実行しないでください。
 
-```bash
-codex plugin marketplace add "<converted-skills-marketplaceの絶対パス>"
-```
+登録は個人用MarketplaceからPluginを選べるようにするだけで、インストール／再インストールではありません。結果は`installation_performed: false`を記録し、強制更新時は`reinstall_required: true`も記録します。対応するChatGPT／Codex画面からPluginを明示的にインストールし、フラグが付いた更新では再インストールします。entryが表示されなければデスクトップアプリを再起動し、新しいChatで最初はSkillを明示的に呼び出して確認してください。ローカルMarketplaceの利用可否は画面ごとに異なります。最新手順は[OpenAI公式Pluginドキュメント](https://developers.openai.com/plugins/build/plugins)を確認してください。
 
-対応するChatGPT／Codex画面から生成Pluginをインストールします。Marketplaceが表示されなければデスクトップアプリを再起動し、新しいChatで最初はSkillを明示的に呼び出して確認してください。ローカル／リポジトリMarketplaceの利用可否は画面ごとに異なります。最新手順は[OpenAI公式Pluginドキュメント](https://developers.openai.com/plugins/build/plugins)を確認してください。
-
-本ツールはMarketplace登録、Pluginインストール、公開、ホームディレクトリ変更を自動実行しません。
+本ツールは`codex plugin add`、Pluginのインストール／再インストール、公開、pushを実行しません。ホームディレクトリに残すことを意図した変更は、登録対象Pluginディレクトリと標準の個人用Marketplaceファイルに限定します。ただし登録処理では、個人用Marketplaceルートに所有者を確認するlockと復旧journalを置き、個人用Pluginルートに一時stage／backupを作ります。通常は削除しますが、cleanupやrollbackが完了しなかった場合は、所有者を推測して未知のデータを削除しないため、診断付きで残すことがあります。Chatだけ／クラウドだけの環境ではこのローカル登録を実行できないため、ローカルDesktop／CodexまたはCLIで変換してください。
 
 ## セキュリティモデル
 
@@ -273,7 +296,9 @@ Agent Skill to Plugin本体はApache-2.0です。このライセンスは取得�
 
 `security_rejected`: 診断を確認してください。command source、credential付きURL、危険なパス、symlink、秘密情報らしいファイルを回避するバイパスは用意していません。
 
-`output_conflict`: 別の`--output-root`を使うか、内容を確認して競合物を整理するか、置換する意図がある場合だけ`--force`を使います。
+`output_conflict`: ワークスペース生成物の競合なら、別の`--output-root`を使うか、確認後に競合物を整理するか、ワークスペースだけを置換する`--force`を使います。`~/plugins`配下の内容が異なる同名Pluginまたは個人用Marketplace entryの競合なら、報告された状態を確認し、置換を明示承認した場合だけ別の`--force-personal`を使います。`--force`は個人用領域の置換を許可しません。
+
+梱包完了後に個人用登録だけが失敗した場合は、検証済みワークスペースPluginを残し、報告された権限、lock、journal、cleanup、競合を解決してから`agent-skill-to-plugin register-personal --plugin-dir <generated-plugin-dir>`で登録だけを再試行します。残されたlockや復旧journalは確認すべき証拠であり、推測で削除しないでください。異なる内容の置換には、明示承認後の`--force-personal`だけを使います。意図的に個人用Marketplaceを変更しない場合だけ`--no-register-personal`を使います。
 
 スペースを含むWindowsパスは`--input-file`を使うか引用符で囲みます。相対パスが曖昧なら`--source-base`を明示してください。
 

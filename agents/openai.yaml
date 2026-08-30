@@ -1,6 +1,6 @@
 interface:
   display_name: "Agent Skill to Plugin"
   short_description: "Package Agent Skills as OpenAI plugins"
-  default_prompt: "Use $agent-skill-to-plugin to resolve this source and create a validated skills-only plugin ZIP:"
+  default_prompt: "Use $agent-skill-to-plugin to resolve this source, create a validated skills-only plugin, and register it in my personal Marketplace:"
 policy:
   allow_implicit_invocation: false

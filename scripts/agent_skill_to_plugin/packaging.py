@@ -781,10 +781,6 @@ def _marketplace_with_entry(path: Path, plugin_name: str, *, force: bool) -> dic
     return data
 
 
-def _marketplace_add_command(output_root: Path) -> str:
-    return f'codex plugin marketplace add "{str(output_root).replace(chr(34), chr(92) + chr(34))}"'
-
-
 def _copy_license_files(snapshot: Path, plugin_dir: Path, findings: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:
     copied: list[dict[str, Any]] = []
     target_root = plugin_dir / "THIRD_PARTY_LICENSES"
@@ -1033,7 +1029,6 @@ def _package_selected_locked(
             "plugin_tree_sha256": plugin_tree_sha256,
             "marketplace_root": str(output_root),
             "marketplace_file": str(marketplace_file),
-            "marketplace_add_command": _marketplace_add_command(output_root),
             "report_json": str(final_report_json),
             "report_markdown": str(final_report_md),
             "resolution_id": state.resolution_id,
@@ -1065,7 +1060,6 @@ def _package_selected_locked(
         zip_sha256=zip_sha256,
         marketplace_root=str(output_root),
         marketplace_file=str(marketplace_file),
-        marketplace_add_command=_marketplace_add_command(output_root),
         report_json=str(final_report_json),
         report_markdown=str(final_report_md),
         skills=tuple(selected),

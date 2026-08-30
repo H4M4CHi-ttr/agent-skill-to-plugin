@@ -4,17 +4,32 @@ All notable changes to Agent Skill to Plugin are documented here. The project fo
 
 ## [Unreleased]
 
+No changes yet.
+
+## [0.6.0] - 2026-08-30
+
 ### Fixed
 
 - Canonicalized temporary Marketplace and Windows npx launcher paths so macOS `/var` aliases and Windows 8.3 path spellings behave consistently.
+- Prevented root-Skill installs from discovering test fixtures as extra Skills by storing fixture manifests under a non-discoverable filename and restoring `SKILL.md` only in isolated test copies.
+
+### Added
+
+- Added safe, idempotent registration of validated Plugins at `~/plugins/<plugin-name>` in the standard personal Marketplace at `~/.agents/plugins/marketplace.json`, including collision checks, separately authorized `--force-personal` replacement, and an intentional `--no-register-personal` workspace-only mode. Workspace `--force` does not authorize personal-state replacement.
+- Added `register-personal --plugin-dir <generated-plugin-dir>` so a completed package can be registered again without repeating resolution or packaging after a registration failure.
 
 ### Changed
 
+- Made personal-Marketplace registration the default for local `run` and `convert`; the implicitly discovered default path no longer requires or recommends `codex plugin marketplace add`.
+- Kept Plugin installation/reinstallation, publication, and push outside the conversion workflow: Marketplace registration does not run `codex plugin add`.
+- Reported `installation_performed: false` for every registration and `reinstall_required: true` after an explicitly forced divergent update, without performing that reinstall.
+- Hid generated Plugin ZIP paths from normal human and Skill results. Use `--show-zip`, or explicitly request a ZIP/archive, distribution bundle, or offline transfer, to surface the archive; versioned JSON and the JSON conversion report retain its artifact metadata.
+- Coordinated personal registration with an ownership-checked lock and recovery journal plus best-effort cleanup and rollback. Incomplete recovery retains attributable diagnostics and support paths instead of claiming cross-file atomicity or deleting unknown data.
 - Renamed the public repository from `skills` to `agent-skill-to-plugin` and updated package metadata URLs.
 - Clarified that Plugin packaging extends reusable Skills to ordinary ChatGPT Chat, while local-file and repository workflows remain better suited to Work, Codex, or the CLI.
 - Documented the current desktop-app path for local and repository Marketplace plugins without overstating individual-plan availability.
 - Made `uv` the recommended end-user runtime with inline Python/PyYAML metadata, while retaining Python 3.10+ with PyYAML 6.x as a fallback.
-- Made `npx skills add` the sole documented end-user distribution path for this Skill; the deterministic Skill archive remains an internal CI packaging check, while generated Plugin ZIPs remain converter outputs.
+- Made `npx skills add` the sole documented end-user distribution path for this Skill; the deterministic Skill archive remains an internal CI packaging check, while generated Plugin ZIPs remain converter outputs that are surfaced only on explicit request.
 
 ## [0.5.0] - 2026-08-29
 

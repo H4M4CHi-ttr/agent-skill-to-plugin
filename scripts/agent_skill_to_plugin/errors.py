@@ -26,6 +26,7 @@ class ExitCode(IntEnum):
     INVALID_SELECTION = 32
     RESOLUTION_INTEGRITY_FAILED = 33
     OUTPUT_CONFLICT = 34
+    PERSONAL_MARKETPLACE_FAILED = 35
     INTERNAL_ERROR = 70
 
 
@@ -45,6 +46,7 @@ ERROR_EXIT_CODES: dict[str, ExitCode] = {
     "invalid_selection": ExitCode.INVALID_SELECTION,
     "resolution_integrity_failed": ExitCode.RESOLUTION_INTEGRITY_FAILED,
     "output_conflict": ExitCode.OUTPUT_CONFLICT,
+    "personal_marketplace_failed": ExitCode.PERSONAL_MARKETPLACE_FAILED,
 }
 
 

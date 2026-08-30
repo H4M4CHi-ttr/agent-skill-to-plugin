@@ -9,7 +9,14 @@ from pathlib import Path
 import sys
 from typing import Any, Sequence
 
-from .application import ResolutionOutcome, convert_resolution, resolve_request, run_request
+from .application import (
+    RegistrationOutcome,
+    ResolutionOutcome,
+    convert_resolution,
+    register_plugin_directory,
+    resolve_request,
+    run_request,
+)
 from .errors import ExitCode, NeedsInputError, SkillToPluginError
 from .limits import DEFAULT_PLUGIN_VERSION, DEFAULT_TIMEOUT_SECONDS, SCHEMA_VERSION, TOOL_VERSION
 from .models import ConversionResult
@@ -39,7 +46,23 @@ def _add_packaging_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--display-name")
     parser.add_argument("--author-name", default="Local conversion")
     parser.add_argument("--version", default=DEFAULT_PLUGIN_VERSION)
-    parser.add_argument("--force", action="store_true", help="Explicitly replace artifacts with the same name")
+    parser.add_argument("--force", action="store_true", help="Explicitly replace workspace artifacts with the same name")
+    parser.add_argument(
+        "--force-personal",
+        action="store_true",
+        help="Separately authorize replacement of a divergent same-name personal Plugin registration",
+    )
+    parser.add_argument(
+        "--register-personal",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Register in the standard personal Marketplace (default: enabled)",
+    )
+    parser.add_argument(
+        "--show-zip",
+        action="store_true",
+        help="Print the generated distribution ZIP path and SHA-256",
+    )
 
 
 def build_argument_parser() -> argparse.ArgumentParser:
@@ -63,6 +86,18 @@ def build_argument_parser() -> argparse.ArgumentParser:
     )
     _add_packaging_arguments(convert)
     convert.add_argument("--json", action="store_true", help="Print one JSON object to stdout")
+
+    register_personal = subparsers.add_parser(
+        "register-personal",
+        help="Register an already generated Plugin without resolving or packaging again",
+    )
+    register_personal.add_argument("--plugin-dir", type=Path, required=True)
+    register_personal.add_argument(
+        "--force-personal",
+        action="store_true",
+        help="Authorize replacement of a divergent same-name personal Plugin registration",
+    )
+    register_personal.add_argument("--json", action="store_true", help="Print one JSON object to stdout")
     return parser
 
 
@@ -95,7 +130,9 @@ def make_payload(status: str, data: dict[str, Any] | None = None, *, error_code:
     return payload
 
 
-def result_payload(result: ConversionResult | ResolutionOutcome) -> tuple[dict[str, Any], int]:
+def result_payload(result: ConversionResult | ResolutionOutcome | RegistrationOutcome) -> tuple[dict[str, Any], int]:
+    if isinstance(result, RegistrationOutcome):
+        return make_payload("ok", result.to_dict()), int(ExitCode.OK)
     if isinstance(result, ResolutionOutcome):
         data = result.to_dict()
         status = data.get("status", "resolved")
@@ -104,7 +141,32 @@ def result_payload(result: ConversionResult | ResolutionOutcome) -> tuple[dict[s
     return make_payload("ok", result.to_dict()), int(ExitCode.OK)
 
 
-def _human(result: ConversionResult | ResolutionOutcome) -> None:
+def _print_personal_registration(registration: Any) -> None:
+    print(
+        "Personal Marketplace: "
+        f"{registration.status} ({registration.marketplace_name})"
+    )
+    print(f"Registered plugin directory: {registration.plugin_dir}")
+    print(f"Marketplace file: {registration.marketplace_file}")
+    print("Plugin installation performed: no")
+    if registration.reinstall_required:
+        print("Reinstallation required: yes (an existing personal Plugin registration was updated)")
+    print(f"View: {registration.view_url}")
+    print(f"Share: {registration.share_url}")
+
+
+def _human(
+    result: ConversionResult | ResolutionOutcome | RegistrationOutcome,
+    *,
+    show_zip: bool = False,
+) -> None:
+    if isinstance(result, RegistrationOutcome):
+        _print_personal_registration(result.registration)
+        if result.warnings:
+            print("Warnings:")
+            for warning in result.warnings:
+                print(f"  - {warning}")
+        return
     if isinstance(result, ResolutionOutcome):
         if result.decision.needs_selection:
             print(f"Selection required (resolution {result.state.resolution_id}):")
@@ -123,11 +185,15 @@ def _human(result: ConversionResult | ResolutionOutcome) -> None:
         return
     print(f"Created plugin: {result.plugin_name}")
     print("Skills: " + ", ".join(skill.name for skill in result.skills))
-    print(f"Plugin directory: {result.plugin_dir}")
-    print(f"ZIP: {result.zip_path}")
-    print(f"ZIP SHA-256: {result.zip_sha256}")
-    print(f"Marketplace root: {result.marketplace_root}")
-    print(f"Register manually: {result.marketplace_add_command}")
+    registration = result.personal_marketplace
+    if registration is not None:
+        _print_personal_registration(registration)
+    else:
+        print("Personal Marketplace: not registered")
+        print(f"Generated plugin directory: {result.plugin_dir}")
+    if show_zip:
+        print(f"ZIP: {result.zip_path}")
+        print(f"ZIP SHA-256: {result.zip_sha256}")
     print(f"JSON report: {result.report_json}")
     print(f"Markdown report: {result.report_markdown}")
     if result.warnings:
@@ -154,8 +220,13 @@ def main(argv: Sequence[str] | None = None) -> int:
         args = build_argument_parser().parse_args(arguments)
         if getattr(args, "timeout", DEFAULT_TIMEOUT_SECONDS) <= 0:
             raise SkillToPluginError("Timeout must be greater than zero.", code="unknown_input_format")
-        if args.command == "resolve":
-            result: ConversionResult | ResolutionOutcome = resolve_request(
+        if args.command == "register-personal":
+            result: ConversionResult | ResolutionOutcome | RegistrationOutcome = register_plugin_directory(
+                args.plugin_dir,
+                force_personal=args.force_personal,
+            )
+        elif args.command == "resolve":
+            result = resolve_request(
                 _read_input(args),
                 output_root=args.output_root,
                 source_base=args.source_base,
@@ -172,6 +243,8 @@ def main(argv: Sequence[str] | None = None) -> int:
                 author_name=args.author_name,
                 version=args.version,
                 force=args.force,
+                register_personal=args.register_personal,
+                force_personal=args.force_personal,
             )
         else:
             result = convert_resolution(
@@ -182,12 +255,14 @@ def main(argv: Sequence[str] | None = None) -> int:
                 author_name=args.author_name,
                 version=args.version,
                 force=args.force,
+                register_personal=args.register_personal,
+                force_personal=args.force_personal,
             )
         payload, code = result_payload(result)
         if json_requested:
             print(json.dumps(payload, ensure_ascii=False, indent=2))
         else:
-            _human(result)
+            _human(result, show_zip=getattr(args, "show_zip", False))
         return code
     except NeedsInputError as exc:
         payload = make_payload(

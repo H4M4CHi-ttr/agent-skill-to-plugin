@@ -2,7 +2,7 @@
 
 ## Goals
 
-Agent Skill to Plugin bridges heterogeneous Agent Skill sources into one OpenAI skills-only Plugin while retaining a reviewable source trail. The design separates source-specific acquisition from shared Skill discovery, validation, selection, and packaging.
+Agent Skill to Plugin bridges heterogeneous Agent Skill sources into one OpenAI skills-only Plugin while retaining a reviewable source trail. The design separates source-specific acquisition from shared Skill discovery, validation, selection, packaging, and personal-Marketplace registration.
 
 Non-goals include synthesizing Skills from Claude commands/agents, executing installers, deciding semantic preferences with opaque AI heuristics, publishing a Plugin, or proving that imported instructions are benign.
 
@@ -31,7 +31,10 @@ untrusted request text
  validation + compatibility + provenance
         │
         ▼
- packaging ──► Plugin, marketplace, ZIP, JSON/Markdown reports
+ packaging ──► Plugin, workspace marketplace, deterministic ZIP, reports
+        │
+        ▼
+ personal registration ──► ~/plugins/<name> + ~/.agents/plugins/marketplace.json
 ```
 
 Each boundary consumes structured data. Repository prose is never fed back as instructions to parsing or resolution.
@@ -58,9 +61,11 @@ Each boundary consumes structured data. Repository prose is never fed back as in
 
 `provenance.py` records source identity, timestamps, hashes, selection reasons, and license evidence. License evidence is not interpreted as a legal grant.
 
-`packaging.py` builds a staged Plugin, validates its manifest and tree, creates a deterministic ZIP, updates the local marketplace, emits reports, and commits outputs. It avoids partial final artifacts by staging first.
+`packaging.py` builds a staged Plugin, validates its manifest and tree, creates a deterministic ZIP, updates the workspace marketplace, emits reports, and commits outputs. It reduces partial workspace artifacts by staging first. The ZIP remains available for provenance and explicit distribution requests. Ordinary human output shows it only with `--show-zip`; versioned JSON and the JSON conversion report retain its path and SHA-256, while the Markdown report does not surface it.
 
-`models.py` contains serialization-friendly data classes including `ParsedInput`, `ResolvedSource`, `MarketplaceInfo`, `PluginSource`, `SkillCandidate`, `ResolutionState`, `SelectedSkill`, `ConversionResult`, `Provenance`, and `Diagnostic`.
+`personal_marketplace.py` registers a validated result in the standard personal locations: `~/plugins/<plugin-name>` and `~/.agents/plugins/marketplace.json`. It preserves unrelated Marketplace metadata and entry order, treats an identical registration as idempotent, rejects divergent same-name content by default, and requires the separate `--force-personal` authorization for replacement. An ownership-checked lock and recovery journal coordinate the Plugin-tree and Marketplace-file updates; staged and backup trees support best-effort cleanup or rollback. If recovery cannot complete safely, attributable lock, journal, or backup state is retained with diagnostics instead of claiming cross-file atomicity or deleting unknown data. The standard personal Marketplace is discovered implicitly; registration does not invoke `codex plugin marketplace add`, install, or reinstall the Plugin.
+
+`models.py` contains serialization-friendly data classes including `ParsedInput`, `ResolvedSource`, `MarketplaceInfo`, `PluginSource`, `SkillCandidate`, `ResolutionState`, `SelectedSkill`, `ConversionResult`, personal registration results, `Provenance`, and `Diagnostic`.
 
 `limits.py` is the single policy location for tool/schema versions and resource/format limits. Those values are a conservative tool policy; they are not all claims about hard product limits.
 
@@ -70,7 +75,7 @@ Each boundary consumes structured data. Repository prose is never fed back as in
 
 If selection is needed, the caller asks the user once. `convert` loads the saved state, verifies that the snapshot is still within the expected location and has the recorded hash, resolves the explicit selector, then packages. It does not re-fetch a moving branch.
 
-`run` composes both phases: it converts immediately only when the deterministic selection policy returns a complete choice.
+`run` composes both phases: it converts immediately only when the deterministic selection policy returns a complete choice. Successful local `run` and `convert` operations register by default; `--no-register-personal` is the explicit workspace-only opt-out. If packaging succeeds but registration fails, `register-personal --plugin-dir <generated-plugin-dir>` retries only registration. `--force-personal` authorizes divergent personal-state replacement independently of workspace `--force`. `--show-zip` affects ordinary human presentation, not deterministic archive generation or the ZIP metadata retained in versioned JSON and the JSON conversion report.
 
 ## Plugin boundary
 
@@ -87,7 +92,7 @@ The generated artifact is intentionally skills-only:
 
 Safe source-relative files inside a selected Skill are preserved. Validated external references can be copied into a stable plugin-relative location and are recorded in the report. Detected license/notice files may be included under `THIRD_PARTY_LICENSES/` with their origin recorded.
 
-Packaging normalizes a `...` front-matter closer to `---`. When source front matter contains `disable-model-invocation: true`, it changes only the generated front-matter value to `false` and expresses the source intent as `policy.allow_implicit_invocation: false` in `agents/openai.yaml`. Existing agent metadata is filtered through the tool's conservative 0.5.0 allowlist; default prompts must mention `$skill-name`, icon paths must resolve within the Plugin, and changed field paths are reported without their values. These are mechanical, reportable format adaptations, not semantic rewrites of the Skill instructions. Runtime invocation behavior remains product-surface and version dependent.
+Packaging normalizes a `...` front-matter closer to `---`. When source front matter contains `disable-model-invocation: true`, it changes only the generated front-matter value to `false` and expresses the source intent as `policy.allow_implicit_invocation: false` in `agents/openai.yaml`. Existing agent metadata is filtered through the tool's conservative 0.6.0 allowlist; default prompts must mention `$skill-name`, icon paths must resolve within the Plugin, and changed field paths are reported without their values. These are mechanical, reportable format adaptations, not semantic rewrites of the Skill instructions. Runtime invocation behavior remains product-surface and version dependent.
 
 ## Extension points
 
@@ -108,6 +113,9 @@ A new source must not bypass the common discovery, validation, selection, and pa
 - structured error codes and process exit codes
 - serialized ResolutionState and snapshot integrity contract
 - CLI subcommands and core option names
+- default personal-registration behavior and its explicit opt-out
+- separate workspace `--force` and personal-registration `--force-personal` authorization
+- standalone `register-personal` retry behavior
 - legacy `pluginize.py` arguments while the compatibility wrapper is supported
 
-Version 0.5.0 is beta, so changes are possible, but intentional migration notes and regression tests are required.
+Version 0.6.0 is beta, so changes are possible, but intentional migration notes and regression tests are required.

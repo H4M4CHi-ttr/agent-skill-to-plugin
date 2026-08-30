@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import atexit
 import json
 from pathlib import Path
 import shutil
+import tempfile
 
 from agent_skill_to_plugin.discovery import discover_skills
 from agent_skill_to_plugin.models import ParsedInput, ResolutionState, ResolvedSource
@@ -10,7 +12,24 @@ from agent_skill_to_plugin.utils import hash_tree
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-FIXTURES = PROJECT_ROOT / "fixtures"
+FIXTURE_TEMPLATES = PROJECT_ROOT / "fixtures"
+
+
+def _materialize_fixtures() -> Path:
+    """Restore non-discoverable fixture manifests in an isolated test tree."""
+    temporary_root = Path(tempfile.mkdtemp(prefix="agent-skill-to-plugin-fixtures-"))
+    atexit.register(shutil.rmtree, temporary_root, ignore_errors=True)
+    destination = temporary_root / "fixtures"
+    shutil.copytree(FIXTURE_TEMPLATES, destination)
+    for stored_manifest in destination.rglob("SKILL.fixture.md"):
+        manifest = stored_manifest.with_name("SKILL.md")
+        if manifest.exists():
+            raise RuntimeError(f"fixture contains both stored and live manifests: {manifest}")
+        stored_manifest.replace(manifest)
+    return destination
+
+
+FIXTURES = _materialize_fixtures()
 
 
 def copy_fixture(name: str, destination: Path) -> Path:

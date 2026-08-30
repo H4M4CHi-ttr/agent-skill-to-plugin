@@ -37,6 +37,14 @@ def build_argument_parser() -> argparse.ArgumentParser:
     parser.add_argument("--version", default="1.0.0")
     parser.add_argument("--timeout", type=int, default=300)
     parser.add_argument("--force", action="store_true")
+    parser.add_argument("--force-personal", action="store_true")
+    parser.add_argument(
+        "--register-personal",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Register in the standard personal Marketplace (default: enabled)",
+    )
+    parser.add_argument("--show-zip", action="store_true")
     parser.add_argument("--json", action="store_true")
     parser.add_argument("--staged-skills-dir", type=Path, help=argparse.SUPPRESS)
     return parser
@@ -91,12 +99,14 @@ def main(argv: Sequence[str] | None = None) -> int:
             author_name=args.author_name,
             version=args.version,
             force=args.force,
+            register_personal=args.register_personal,
+            force_personal=args.force_personal,
         )
         payload, code = result_payload(result)
         if json_requested:
             print(json.dumps(payload, ensure_ascii=False, indent=2))
         else:
-            _human(result)
+            _human(result, show_zip=args.show_zip)
         # The legacy CLI used 2 for any expected failure or unresolved choice.
         return 0 if code == 0 else 2
     except NeedsInputError as exc:

@@ -2,7 +2,7 @@
 
 ## Specification snapshot
 
-This document records facts checked on **2026-08-29** against the [official OpenAI plugin documentation](https://developers.openai.com/plugins/build/plugins). Product behavior can change; verify the primary source before making release-critical assumptions.
+This document records product-format facts checked on **2026-08-29** against the [official OpenAI plugin documentation](https://developers.openai.com/plugins/build/plugins), plus the standard personal-Marketplace convention checked on **2026-08-30** against the bundled `plugin-creator` workflow. Product behavior can change; verify the primary source and current local tooling before making release-critical assumptions.
 
 At that snapshot:
 
@@ -10,10 +10,13 @@ At that snapshot:
 - a Skill is stored under `skills/<name>/SKILL.md`;
 - a minimal Plugin manifest includes `name`, `version`, `description`, and `skills`;
 - a local/repository Marketplace manifest is `.agents/plugins/marketplace.json`;
-- local Marketplace registration uses `codex plugin marketplace add <path>`; and
+- the standard personal convention stores Plugins at `~/plugins/<plugin-name>` and the Marketplace at `~/.agents/plugins/marketplace.json`, which is discovered implicitly;
+- an explicit non-default repository Marketplace still requires `codex plugin marketplace add <path>`; and
 - local/repository Marketplace availability varies by product surface.
 
 The tool generates only skills-only Plugins. It does not add MCP servers, apps, hooks, or other capabilities merely because the source Claude Plugin contains them.
+
+Local `run` and `convert` follow the standard personal convention by default. `--no-register-personal` explicitly limits the operation to workspace artifacts. Registration updates Marketplace availability only; it does not call `codex plugin add`, install or reinstall a Plugin, publish, or push. Results therefore report `installation_performed: false`; a forced divergent replacement reports `status: "updated"` and `reinstall_required: true` so callers can request an explicit reinstall separately. Divergent same-name personal state requires `--force-personal`, independently of workspace `--force`. After packaging succeeds but registration fails, `register-personal --plugin-dir <generated-plugin-dir>` retries only registration. Registration uses an ownership-checked lock and recovery journal; cleanup and rollback are best effort, so retained support state must be inspected rather than removed by guessing ownership. A Chat-only/cloud context is not assumed to have access to the user's local home directory, so personal registration requires a local Desktop/Codex or CLI execution context.
 
 ## Centralized policy
 
@@ -41,9 +44,9 @@ Filesystem validation intentionally applies portable constraints even when runni
 | Source | Required dependency | Authentication behavior |
 |---|---|---|
 | local file/directory/archive | no additional source tool beyond the selected runtime | none |
-| HTTPS Skill/archive/npm tarball | network access from the selected runtime | no credentials in URLs; public npm registry in 0.5.0 |
+| HTTPS Skill/archive/npm tarball | network access from the selected runtime | no credentials in URLs; public npm registry in 0.6.0 |
 | GitHub/Git | Git executable | existing Git/SSH configuration only |
-| npx skills | Node.js/npm/npx | isolated npm cache/config; no user-home installation |
+| npx skills | Node.js/npm/npx | isolated npm cache/config; acquisition itself performs no user-home Skill installation |
 | Claude Marketplace discovery | optional Claude executable | only `plugin marketplace list --json`, read-only |
 
 If a source-specific dependency is missing, unrelated local functionality remains usable.
@@ -52,7 +55,7 @@ If a source-specific dependency is missing, unrelated local functionality remain
 
 Front matter is parsed as YAML with safe loading and explicit validation. The tool requires the fields needed to construct a valid Skill and preserves supported additional source metadata in the copied `SKILL.md`. Malformed YAML and type errors are reported as candidate diagnostics.
 
-OpenAI and source ecosystems may accept different optional front-matter keys. Passing static validation does not guarantee that every optional source-specific instruction works unchanged in ChatGPT/Codex. On the date above, the OpenAI Plugin validator bundled with the tested local Codex environment rejected a generated Plugin retaining `disable-model-invocation: true` or a `...` front-matter closer; current public documentation does not describe the invocation field. The tool therefore normalizes those forms only in the generated copy and expresses explicit-only intent in `agents/openai.yaml` with `policy.allow_implicit_invocation: false`. This policy must be verified on each target surface/version. Existing agent metadata is filtered through the 0.5.0 conservative allowlist, default prompts must mention the Skill token, icon paths are validated, and exact field paths plus source/generated hashes are reported under `compatibility_adaptations`.
+OpenAI and source ecosystems may accept different optional front-matter keys. Passing static validation does not guarantee that every optional source-specific instruction works unchanged in ChatGPT/Codex. On the date above, the OpenAI Plugin validator bundled with the tested local Codex environment rejected a generated Plugin retaining `disable-model-invocation: true` or a `...` front-matter closer; current public documentation does not describe the invocation field. The tool therefore normalizes those forms only in the generated copy and expresses explicit-only intent in `agents/openai.yaml` with `policy.allow_implicit_invocation: false`. This policy must be verified on each target surface/version. Existing agent metadata is filtered through the 0.6.0 conservative allowlist, default prompts must mention the Skill token, icon paths are validated, and exact field paths plus source/generated hashes are reported under `compatibility_adaptations`.
 
 ## Claude compatibility diagnostics
 
@@ -62,7 +65,7 @@ Those items are not automatically rewritten. If a Claude Plugin has no valid `SK
 
 ## JSON and exit-code compatibility
 
-JSON output uses `schema_version: "1.0"` in 0.5.0. Process exit categories are:
+JSON output uses `schema_version: "1.0"` in 0.6.0. Process exit categories are:
 
 | Code | Meaning |
 |---:|---|
@@ -84,9 +87,12 @@ JSON output uses `schema_version: "1.0"` in 0.5.0. Process exit categories are:
 | 32 | invalid selection |
 | 33 | resolution integrity failed |
 | 34 | output conflict |
+| 35 | personal Marketplace registration failed |
 | 70 | unexpected internal error |
 
 Callers should inspect both `status` and `error_code`, not parse human-readable messages.
+
+`run` and `convert` retain `zip_path` and `zip_sha256` in versioned JSON output and the JSON conversion report. Ordinary human output shows those values only with `--show-zip`; the Markdown conversion report does not surface the ZIP.
 
 ## Legacy wrapper
 
