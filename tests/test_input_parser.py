@@ -84,6 +84,34 @@ class NpxInputParserTests(unittest.TestCase):
         self.assertEqual(url, parsed.source)
         self.assertEqual(1, len(parsed.logical_sources))
 
+    def test_chat_markdown_transport_is_one_npx_request(self) -> None:
+        raw = (
+            r"[$agent-skill-to-plugin](C:\Users\dhama\.agents\skills\agent-skill-to-plugin\SKILL.md) "
+            "npx skills add "
+            "[https://github.com/mattpocock/skills](https://github.com/mattpocock/skills) "
+            "--skill grilling"
+        )
+
+        parsed = parse_input(raw)
+
+        self.assertEqual("npx_skills", parsed.kind)
+        self.assertEqual("https://github.com/mattpocock/skills", parsed.source)
+        self.assertEqual(("grilling",), parsed.requested_skills)
+        self.assertEqual(("https://github.com/mattpocock/skills",), parsed.logical_sources)
+        self.assertEqual(raw, parsed.raw_input)
+
+    def test_command_autolink_does_not_absorb_an_unrelated_url(self) -> None:
+        with self.assertRaises(NeedsInputError) as raised:
+            parse_input(
+                "npx skills add "
+                "[https://github.com/example/one](https://github.com/example/one) "
+                "--skill demo\n"
+                "https://github.com/example/two"
+            )
+
+        choices = raised.exception.details["choices"]
+        self.assertEqual(["npx_skills", "github_repository"], [item["kind"] for item in choices[:-1]])
+
 
 class ClaudeInputParserTests(unittest.TestCase):
     def test_slash_and_cli_install_forms(self) -> None:
@@ -180,6 +208,48 @@ class InputSecurityTests(unittest.TestCase):
                 with self.assertRaises(SkillToPluginError) as raised:
                     parse_npx_command(command)
                 self.assertEqual("security_rejected", raised.exception.code)
+
+    def test_command_markdown_link_cannot_hide_a_different_target(self) -> None:
+        with self.assertRaises(SkillToPluginError) as raised:
+            parse_input(
+                "npx skills add "
+                "[https://github.com/example/visible](https://github.com/example/target) "
+                "--skill demo"
+            )
+
+        self.assertEqual("security_rejected", raised.exception.code)
+
+    def test_command_markdown_autolink_still_rejects_credentials(self) -> None:
+        source = "https://user:password@github.com/example/repo"
+        with self.assertRaises(SkillToPluginError) as raised:
+            parse_input(f"npx skills add [{source}]({source}) --skill demo")
+
+        self.assertEqual("security_rejected", raised.exception.code)
+
+    def test_command_markdown_title_cannot_erase_shell_syntax(self) -> None:
+        source = "https://github.com/example/repo"
+        with self.assertRaises(SkillToPluginError) as raised:
+            parse_input(
+                f'npx skills add [{source}]({source} "&& whoami") --skill demo'
+            )
+
+        self.assertEqual("security_rejected", raised.exception.code)
+
+    def test_transport_skill_link_cannot_hide_shell_syntax(self) -> None:
+        with self.assertRaises(SkillToPluginError) as raised:
+            parse_input(
+                r"[$agent-skill-to-plugin](C:\tmp;whoami\skills\agent-skill-to-plugin\SKILL.md) "
+                "npx skills add owner/repo --skill demo"
+            )
+
+        self.assertEqual("security_rejected", raised.exception.code)
+
+    def test_nonmatching_local_markdown_link_is_not_transport_metadata(self) -> None:
+        with self.assertRaises(NeedsInputError):
+            parse_input(
+                r"[$agent-skill-to-plugin](C:\tmp\skills\different-skill\SKILL.md) "
+                "npx skills add owner/repo --skill demo"
+            )
 
 
 if __name__ == "__main__":

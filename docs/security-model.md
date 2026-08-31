@@ -25,6 +25,8 @@ Repository prose and Skill instructions are parsed only as data needed for candi
 
 Subprocesses receive argv arrays and `shell=False`; stdin is disabled for acquisition commands. The npx parser uses a strict executable/package/subcommand/option grammar, rejects shell metacharacters and unknown options, and renders sensitive option/value pairs in a non-smuggleable form. User global/agent routing is not forwarded.
 
+Chat-generated Markdown is normalized only at the transport boundary. A local `$skill` invocation link is ignored only when its label matches the containing `skills/<name>/SKILL.md` path. Inside a recognized command, an autolink is unwrapped only when the displayed source exactly equals its target; mismatches are rejected so a Markdown label cannot conceal a different acquisition URL. Unrelated URLs outside the command remain separate logical sources.
+
 On Windows, `.cmd` launchers are not passed to a shell; the npx fetcher locates the Node CLI script and invokes it through `node`. Claude Marketplace discovery declines batch launchers rather than silently using a command shell.
 
 ### Imported code execution
@@ -53,7 +55,7 @@ public numeric addresses returned by that validation and uses the original
 hostname for TLS SNI/certificate verification, preventing a second DNS lookup
 from rebinding the request to a private target. Environment proxy variables are
 not used by this pinned transport; separately audited proxy support is outside
-the 0.6.0 contract. Network sandboxing remains recommended for defense in depth.
+the 0.6.1 contract. Network sandboxing remains recommended for defense in depth.
 
 ### Time-of-check/time-of-use substitution
 
@@ -75,7 +77,7 @@ The current centralized policy includes conservative limits for file count, byte
 
 ## Generated-copy metadata adaptation
 
-Remote instructions are never rewritten or executed. Packaging may mechanically normalize format metadata in the generated copy: a `...` front-matter closer becomes `---`; `disable-model-invocation: true` becomes `false`, while `policy.allow_implicit_invocation: false` expresses explicit-only invocation intent. Existing `agents/openai.yaml` fields outside the conservative 0.6.0 allowlist are omitted, default prompts must name the Skill token, and icon paths must stay inside the Plugin. The tool leaves the fixed source snapshot unchanged and revalidates its hash; changed field paths, source/generated hashes, and reasons are included in the report so these exceptions cannot be silent. Invocation behavior still requires verification on each product surface and version.
+Remote instructions are never rewritten or executed. Packaging may mechanically normalize format metadata in the generated copy: a `...` front-matter closer becomes `---`; `disable-model-invocation: true` becomes `false`, while `policy.allow_implicit_invocation: false` expresses explicit-only invocation intent. Existing `agents/openai.yaml` fields outside the conservative 0.6.1 allowlist are omitted, default prompts must name the Skill token, and icon paths must stay inside the Plugin. The tool leaves the fixed source snapshot unchanged and revalidates its hash; changed field paths, source/generated hashes, and reasons are included in the report so these exceptions cannot be silent. Invocation behavior still requires verification on each product surface and version.
 
 Front matter uses PyYAML safe loading with duplicate/shape/type checks around the accepted manifest. A parse failure is reported with its path; it is not silently ignored.
 

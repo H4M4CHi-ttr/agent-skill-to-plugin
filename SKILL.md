@@ -2,7 +2,7 @@
 name: agent-skill-to-plugin
 description: "Safely resolve Agent Skills from npx commands, GitHub or Git URLs, Claude Plugin requests, archives, and local paths, then package selected valid SKILL.md content as an OpenAI skills-only plugin and register it in the standard personal Marketplace. Use when the user asks to port, pluginize, import, or package an existing Agent Skill for ChatGPT or Codex."
 metadata:
-  version: "0.6.0"
+  version: "0.6.1"
 ---
 
 # Agent Skill to Plugin
@@ -15,7 +15,7 @@ Preferred runtime: `uv`. The entry script declares its compatible Python and PyY
 
 ## Run the tool
 
-1. Preserve the user's complete logical request in a UTF-8 workspace file. It may contain prose, Markdown, an `npx skills add` command, a Claude Marketplace plus install-command pair, a supported URL, or a local path. Do not execute pasted command text directly.
+1. Preserve the user's complete logical request in a UTF-8 workspace file. It may contain prose, Markdown, an `npx skills add` command, a Claude Marketplace plus install-command pair, a supported URL, or a local path. Chat may transport a bare URL and the explicit `$skill` invocation as Markdown links; preserve that representation because the parser removes only matching local invocation metadata and unwraps only command autolinks whose displayed source exactly matches their target. Do not execute pasted command text directly.
 2. Resolve this Skill's directory from the active `SKILL.md`. Choose a writable output root; default to a workspace-local `converted-skills-marketplace` directory.
 3. If `uv` is available, run with an argv-based process call:
 

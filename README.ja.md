@@ -4,7 +4,7 @@
 
 Agent Skill to Pluginは、複数のAgent Skills環境から既存の有効な`SKILL.md`を安全寄りの手順で解決し、OpenAI skills-only pluginへ梱包して標準の個人用Marketplaceへ登録するツールです。取得元の解決、固定スナップショット、決定的な候補選択、検証、来歴、梱包、登録、レポートを分離し、リモートコンテンツは常に信頼できないデータとして扱います。
 
-バージョン0.6.0は公開ベータです。生成された警告と元ライセンスを確認してから、インストールまたは再配布してください。
+バージョン0.6.1は公開ベータです。生成された警告と元ライセンスを確認してから、インストールまたは再配布してください。
 
 本ツールは独立したオープンソースプロジェクトであり、OpenAIまたはAnthropicの公式・提携製品ではありません。
 
@@ -148,6 +148,8 @@ npx --yes skills@latest add https://github.com/vercel-labs/agent-skills/tree/mai
 
 `npx.cmd`、Bash／PowerShell／cmdの行継続に対応します。npmパッケージは正規の`skills`だけ、オプションは限定した許可リストだけを受理します。ユーザー指定のglobal／agentターゲットは除去し、一時プロジェクトへコピーして取得します。
 
+Chatは、貼り付けた裸のURLと明示的な`$agent-skill-to-plugin`呼び出しを、Skillへ渡す前にMarkdownリンクへ変換することがあります。一致するローカル呼び出しリンクは転送メタデータとして扱い、コマンド内の自動リンクは表示された取得元とリンク先が完全に同じ場合だけリンク先へ戻します。そのため一つの`npx`依頼に含まれたままとなり、二つ目の取得元にはなりません。表示とリンク先が異なるコマンド内Markdownリンクは拒否します。
+
 ### GitHubリポジトリ／Skillパス
 
 ```text
@@ -175,7 +177,7 @@ claude plugin install skill-creator@claude-plugins-official
 
 Marketplaceは、同じ入力のmarketplace add、読取専用の`claude plugin marketplace list --json`、既知の安全な対応表、Marketplace名とPlugin名の両方を検証する限定的なGitHub公開検索、の順で解決します。一意でなければMarketplaceのリポジトリまたはURLを求めます。
 
-Claude PluginはPlugin単位の指定なので、その境界に含まれる有効なSkillをデフォルトですべて一つのOpenAI Pluginへ含めます。非Skillコンポーネントはレポートするだけです。0.6.0では、相対パス、GitHub、Git、git-subdir、HTTPSアーカイブ、npmレジストリのPlugin sourceに対応します。npmはレジストリメタデータとtarballを直接取得し、npmやlifecycle scriptを実行しません。`command` sourceは拒否します。
+Claude PluginはPlugin単位の指定なので、その境界に含まれる有効なSkillをデフォルトですべて一つのOpenAI Pluginへ含めます。非Skillコンポーネントはレポートするだけです。0.6.1では、相対パス、GitHub、Git、git-subdir、HTTPSアーカイブ、npmレジストリのPlugin sourceに対応します。npmはレジストリメタデータとtarballを直接取得し、npmやlifecycle scriptを実行しません。`command` sourceは拒否します。
 
 ### ローカルソース
 
@@ -241,7 +243,7 @@ converted-skills-marketplace/
 
 レポートには、正規化した取得元、要求ref／固定commit、取得物と生成物のハッシュ、Skill一覧、選択理由、ライセンス根拠、外部参照の処理、生成コピーへの互換性調整、互換性／セキュリティ診断を記録します。ライセンス検出は証拠収集であり、法的判断ではありません。
 
-ツールは固定取得元スナップショットを変更せず、変換前にそのハッシュを再検証します。生成コピーも原則そのまま保持しますが、2026-08-29にローカルCodex環境同梱のOpenAI Pluginバリデータで観測したメタデータ差には限定的な例外があります。Front Matter終端`...`は`---`へ正規化します。取得元Skillが`disable-model-invocation: true`を使う場合、生成`SKILL.md`では`false`へ変更し、明示呼び出し限定の意図を表すため`agents/openai.yaml`へ`policy.allow_implicit_invocation: false`を書きます。このポリシーの実際の挙動はChatGPT／Codexの各画面・バージョンで別途確認が必要です。既存agent metadataも必要な場合、0.6.0の保守的allowlist（interfaceの表示／説明／icon／色／default prompt、`policy.allow_implicit_invocation`、`dependencies.tools`）へ限定します。default promptには`$skill-name`を含め、icon pathはPlugin内の実在ファイルに限定し、追加／削除／変更したfield pathを値なしで記録します。変更ファイル、理由、取得元ハッシュ、生成後ハッシュはJSON／Markdown両レポートの`compatibility_adaptations`へ記録します。
+ツールは固定取得元スナップショットを変更せず、変換前にそのハッシュを再検証します。生成コピーも原則そのまま保持しますが、2026-08-29にローカルCodex環境同梱のOpenAI Pluginバリデータで観測したメタデータ差には限定的な例外があります。Front Matter終端`...`は`---`へ正規化します。取得元Skillが`disable-model-invocation: true`を使う場合、生成`SKILL.md`では`false`へ変更し、明示呼び出し限定の意図を表すため`agents/openai.yaml`へ`policy.allow_implicit_invocation: false`を書きます。このポリシーの実際の挙動はChatGPT／Codexの各画面・バージョンで別途確認が必要です。既存agent metadataも必要な場合、0.6.1の保守的allowlist（interfaceの表示／説明／icon／色／default prompt、`policy.allow_implicit_invocation`、`dependencies.tools`）へ限定します。default promptには`$skill-name`を含め、icon pathはPlugin内の実在ファイルに限定し、追加／削除／変更したfield pathを値なしで記録します。変更ファイル、理由、取得元ハッシュ、生成後ハッシュはJSON／Markdown両レポートの`compatibility_adaptations`へ記録します。
 
 既存のワークスペース出力はデフォルトで上書きしません。`--force`は、そのワークスペース生成物を置き換えるためだけの明示的なオプトインです。個人用登録は別の境界です。同一内容なら冪等な成功として扱い、同名Pluginの内容またはMarketplace entryが異なる場合は`output_conflict`になります。個人用状態を確認し、置換を明示的に決めた場合だけ`--force-personal`で許可します。
 

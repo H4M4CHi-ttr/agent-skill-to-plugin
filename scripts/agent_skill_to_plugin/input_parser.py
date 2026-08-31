@@ -30,7 +30,7 @@ _SCP_GIT_RE = re.compile(
     r"(?i)(?<![A-Za-z0-9_.-])(?:[A-Za-z0-9_.-]+@)?"
     r"[A-Za-z0-9.-]+\.[A-Za-z]{2,}:[A-Za-z0-9_~./%+-]+"
 )
-_MARKDOWN_LINK_RE = re.compile(r"\[[^\]\r\n]*\]\(([^\s)]+)(?:\s+[\"'][^)]*[\"'])?\)")
+_MARKDOWN_LINK_RE = re.compile(r"\[([^\]\r\n]*)\]\(([^\s)]+)(?:\s+[\"'][^)]*[\"'])?\)")
 _FENCED_BLOCK_RE = re.compile(r"```[^\r\n]*\n(.*?)```", re.DOTALL)
 _INLINE_CODE_RE = re.compile(r"(?<!`)`([^`\r\n]+)`(?!`)")
 _PROMPT_RE = re.compile(r"(?i)^\s*(?:(?:PS\s+[^>\r\n]+>|PS>|\$|>)\s*)")
@@ -56,6 +56,7 @@ _EXPLICIT_COMBINE_RE = re.compile(
     r"|(?:一つ|1つ|ひとつ).{0,12}(?:plugin|プラグイン).{0,12}(?:まとめ|統合)"
     r")"
 )
+_SKILL_INVOCATION_LABEL_RE = re.compile(r"\$([a-z0-9]+(?:-[a-z0-9]+)*)\Z", re.IGNORECASE)
 
 _FORBIDDEN_SHELL_PARTS: tuple[tuple[str, str], ...] = (
     ("&&", "command chaining (`&&`)"),
@@ -414,6 +415,50 @@ def _command_regions(text: str) -> list[str]:
     return regions
 
 
+def _is_transport_skill_invocation_link(label: str, target: str) -> bool:
+    """Recognize Codex Chat's local ``$skill`` invocation link only."""
+
+    label_match = _SKILL_INVOCATION_LABEL_RE.fullmatch(label.strip())
+    if label_match is None or not _LOCAL_PATH_RE.fullmatch(target):
+        return False
+    parts = [part for part in re.split(r"[\\/]+", target.rstrip("\\/")) if part]
+    is_invocation = (
+        len(parts) >= 3
+        and parts[-1].casefold() == "skill.md"
+        and parts[-2].casefold() == label_match.group(1).casefold()
+        and parts[-3].casefold() == "skills"
+    )
+    if is_invocation:
+        _reject_shell_syntax(target)
+    return is_invocation
+
+
+def _strip_transport_skill_invocation_links(text: str) -> str:
+    """Remove UI invocation metadata without discarding user source links."""
+
+    def replace(match: re.Match[str]) -> str:
+        label, target = match.group(1), match.group(2)
+        return " " if _is_transport_skill_invocation_link(label, target) else match.group(0)
+
+    return _MARKDOWN_LINK_RE.sub(replace, text)
+
+
+def _unwrap_command_markdown_autolinks(command: str) -> str:
+    """Restore Chat-generated URL autolinks inside an allow-listed command."""
+
+    def replace(match: re.Match[str]) -> str:
+        label, target = match.group(1).strip(), match.group(2)
+        if label != target:
+            raise SkillToPluginError(
+                "Markdown links inside commands must display the same source they target.",
+                code="security_rejected",
+                details={"label": sanitize_text(label), "target": sanitize_text(target)},
+            )
+        return target
+
+    return _MARKDOWN_LINK_RE.sub(replace, command)
+
+
 def _extract_commands(text: str) -> list[str]:
     commands: list[str] = []
     for region in _command_regions(text):
@@ -421,7 +466,11 @@ def _extract_commands(text: str) -> list[str]:
             line = _PROMPT_RE.sub("", line, count=1)
             match = _COMMAND_START_RE.search(line)
             if match:
-                commands.append(line[match.start():].strip())
+                command = line[match.start():].strip()
+                # Validate the complete Markdown representation before
+                # unwrapping it so link titles cannot erase shell operators.
+                _reject_shell_syntax(command)
+                commands.append(_unwrap_command_markdown_autolinks(command))
     return list(dict.fromkeys(commands))
 
 
@@ -430,7 +479,7 @@ def _trim_url(value: str) -> str:
 
 
 def _extract_urls(text: str) -> list[str]:
-    found = [_trim_url(match.group(1)) for match in _MARKDOWN_LINK_RE.finditer(text)]
+    found = [_trim_url(match.group(2)) for match in _MARKDOWN_LINK_RE.finditer(text)]
     found.extend(_trim_url(match.group(0)) for match in _URL_RE.finditer(text))
     found.extend(_trim_url(match.group(0)) for match in _SCP_GIT_RE.finditer(text))
     return list(dict.fromkeys(item for item in found if item))
@@ -571,11 +620,12 @@ def parse_input(raw: str) -> ParsedInput:
     """Parse exactly one logical request or raise a structured safe-choice error."""
 
     text = normalize_input_text(raw)
+    semantic_text = _strip_transport_skill_invocation_links(text)
     entities: list[_LogicalEntity] = []
     installs: list[str] = []
     marketplace_adds: list[str] = []
 
-    for command in _extract_commands(text):
+    for command in _extract_commands(semantic_text):
         if re.match(r"(?i)^npx(?:\.cmd)?\s+", command):
             parsed = parse_npx_command(command, raw_input=raw)
             entities.append(
@@ -593,7 +643,7 @@ def parse_input(raw: str) -> ParsedInput:
         entities.append(claude)
 
     occupied = {item.source_key for item in entities}
-    for source in _extract_urls(text):
+    for source in _extract_urls(semantic_text):
         key = _source_key(source)
         if key in occupied:
             continue
@@ -601,7 +651,7 @@ def parse_input(raw: str) -> ParsedInput:
         entities.append(_LogicalEntity(parsed, key, f"URL: {sanitize_text(parsed.source or source)}"))
         occupied.add(key)
 
-    for source in _local_candidates(text):
+    for source in _local_candidates(semantic_text):
         key = _source_key(source)
         if key in occupied:
             continue
@@ -616,7 +666,7 @@ def parse_input(raw: str) -> ParsedInput:
         occupied.add(key)
 
     if not entities:
-        stripped = text.strip().strip("`").strip()
+        stripped = semantic_text.strip().strip("`").strip()
         if _GITHUB_SHORTHAND_RE.fullmatch(stripped):
             _validate_source_value(stripped)
             parsed = ParsedInput(
@@ -653,7 +703,7 @@ def parse_input(raw: str) -> ParsedInput:
             details={"sanitized_input": sanitize_text(text)},
         )
     if len(entities) > 1:
-        if _EXPLICIT_COMBINE_RE.search(text):
+        if _EXPLICIT_COMBINE_RE.search(semantic_text):
             return ParsedInput(
                 kind="multi_source",
                 raw_input=raw,

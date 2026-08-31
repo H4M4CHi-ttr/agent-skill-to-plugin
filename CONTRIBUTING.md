@@ -28,7 +28,7 @@ Before a release, build the Python distributions and run the deterministic Skill
 
 The Skill archive is an internal CI invariant check only. Do not publish or attach it as a release asset. End users install Agent Skill to Plugin with `npx skills add H4M4CHi-ttr/agent-skill-to-plugin`; generated Plugin ZIPs remain converter outputs.
 
-The preferred end-user runtime is `uv`; the Python fallback supports Python 3.10+ and PyYAML is the only Python runtime dependency in 0.6.0. Keep the PEP 723 metadata in `scripts/skill_to_plugin.py`, `pyproject.toml`, and `requirements.txt` synchronized. Git, npx, and Claude CLI are source-specific external tools and must not become unconditional test requirements.
+The preferred end-user runtime is `uv`; the Python fallback supports Python 3.10+ and PyYAML is the only Python runtime dependency in 0.6.1. Keep the PEP 723 metadata in `scripts/skill_to_plugin.py`, `pyproject.toml`, and `requirements.txt` synchronized. Git, npx, and Claude CLI are source-specific external tools and must not become unconditional test requirements.
 
 ## Design rules
 

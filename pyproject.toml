@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "agent-skill-to-plugin"
-version = "0.6.0"
+version = "0.6.1"
 description = "Safely resolve Agent Skills and package them as OpenAI skills-only plugins."
 readme = "README.md"
 requires-python = ">=3.10"

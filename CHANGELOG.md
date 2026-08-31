@@ -6,6 +6,12 @@ All notable changes to Agent Skill to Plugin are documented here. The project fo
 
 No changes yet.
 
+## [0.6.1] - 2026-08-31
+
+### Fixed
+
+- Normalized Chat-generated Markdown autolinks inside `npx skills add` commands and ignored the matching local `$skill` invocation link, so one pasted command remains one logical acquisition source. Markdown command links whose displayed source differs from their target now fail closed instead of hiding the destination.
+
 ## [0.6.0] - 2026-08-30
 
 ### Fixed

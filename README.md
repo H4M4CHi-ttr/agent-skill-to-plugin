@@ -4,7 +4,7 @@
 
 Agent Skill to Plugin safely packages existing Agent Skills as OpenAI skills-only plugins for ChatGPT and Codex, then registers validated results in the standard personal Marketplace. It resolves sources from several ecosystems and keeps immutable snapshots, deterministic selection, validation, provenance, packaging, registration, and reporting as separate steps. Remote content is always treated as untrusted data.
 
-Version 0.6.0 is a public beta. Review generated warnings and the upstream license before installing or redistributing any result.
+Version 0.6.1 is a public beta. Review generated warnings and the upstream license before installing or redistributing any result.
 
 This is an independent open-source project. It is not affiliated with or endorsed by OpenAI or Anthropic.
 
@@ -152,6 +152,8 @@ npx --yes skills@latest add https://github.com/vercel-labs/agent-skills/tree/mai
 
 `npx.cmd` and Bash, PowerShell, and cmd line continuations are accepted. Only the canonical `skills` package and a narrow option allowlist are accepted. User-provided global and agent targeting are removed; acquisition is copied into an isolated temporary project scope.
 
+Chat may turn a pasted bare URL and the explicit `$agent-skill-to-plugin` invocation into Markdown links before the request reaches the Skill. A matching local invocation link is treated as transport metadata, and a command autolink is restored to its target only when its displayed source is exactly the same. It therefore remains part of the single `npx` request instead of becoming a second acquisition source. A Markdown command link that displays a different source from its target is rejected.
+
 ### GitHub repository or Skill path
 
 ```text
@@ -179,7 +181,7 @@ claude plugin install skill-creator@claude-plugins-official
 
 Marketplace resolution order is: an inline marketplace-add source, read-only `claude plugin marketplace list --json`, the built-in known-safe map, then a bounded public GitHub search validated against both Marketplace and Plugin names. If the result is not unique, the tool asks for the Marketplace repository or URL.
 
-For a Claude Plugin, every valid Skill inside that Plugin boundary is included by default. Non-Skill Claude components are reported, not converted. Marketplace Plugin sources supported in 0.6.0 are relative paths, GitHub, Git, git-subdir, HTTPS archives, and npm registry packages. npm content is fetched from registry metadata and its tarball without invoking npm or lifecycle scripts. `command` sources are rejected.
+For a Claude Plugin, every valid Skill inside that Plugin boundary is included by default. Non-Skill Claude components are reported, not converted. Marketplace Plugin sources supported in 0.6.1 are relative paths, GitHub, Git, git-subdir, HTTPS archives, and npm registry packages. npm content is fetched from registry metadata and its tarball without invoking npm or lifecycle scripts. `command` sources are rejected.
 
 ### Local source
 
@@ -245,7 +247,7 @@ The archive under `packages/` is deterministic provenance output. Human-readable
 
 Reports record normalized source information, requested and resolved refs, source and generated hashes, selected Skills, selection reasons, license evidence, external-reference handling, generated-copy compatibility adaptations, and compatibility/security diagnostics. License detection is evidence collection, not a legal conclusion.
 
-The tool does not modify its fixed source snapshot and rechecks the snapshot hash before conversion. The generated copy is normally byte-preserving, with narrow metadata exceptions observed against the OpenAI Plugin validator bundled with the local Codex environment on 2026-08-29: it normalizes a `...` front-matter closer to `---`; if a source Skill uses `disable-model-invocation: true`, it sets that field to `false` in the generated `SKILL.md` and writes `policy.allow_implicit_invocation: false` to `agents/openai.yaml` to express explicit-only invocation intent. This policy's behavior still needs verification on each ChatGPT/Codex surface and version. Existing agent metadata is reduced, when needed, to the 0.6.0 conservative allowlist: interface display/description/icons/color/default prompt, `policy.allow_implicit_invocation`, and `dependencies.tools`. Default prompts are made to mention `$skill-name`, icon paths must resolve inside the Plugin, and added/removed/changed metadata field paths are recorded without copying their values. Every changed file, reason, source hash, and generated hash is recorded under `compatibility_adaptations` in both reports.
+The tool does not modify its fixed source snapshot and rechecks the snapshot hash before conversion. The generated copy is normally byte-preserving, with narrow metadata exceptions observed against the OpenAI Plugin validator bundled with the local Codex environment on 2026-08-29: it normalizes a `...` front-matter closer to `---`; if a source Skill uses `disable-model-invocation: true`, it sets that field to `false` in the generated `SKILL.md` and writes `policy.allow_implicit_invocation: false` to `agents/openai.yaml` to express explicit-only invocation intent. This policy's behavior still needs verification on each ChatGPT/Codex surface and version. Existing agent metadata is reduced, when needed, to the 0.6.1 conservative allowlist: interface display/description/icons/color/default prompt, `policy.allow_implicit_invocation`, and `dependencies.tools`. Default prompts are made to mention `$skill-name`, icon paths must resolve inside the Plugin, and added/removed/changed metadata field paths are recorded without copying their values. Every changed file, reason, source hash, and generated hash is recorded under `compatibility_adaptations` in both reports.
 
 Existing workspace output names are not overwritten by default; `--force` is the explicit opt-in for replacing those workspace artifacts. Personal registration has a separate boundary: an identical registration is idempotent, while divergent same-name Plugin content or a conflicting Marketplace entry causes `output_conflict`. Only `--force-personal`, after inspecting the target and explicitly deciding to replace it, authorizes that personal-state replacement.
 

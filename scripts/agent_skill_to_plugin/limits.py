@@ -8,7 +8,7 @@ throughout the resolver and packager.
 from __future__ import annotations
 
 SCHEMA_VERSION = "1.0"
-TOOL_VERSION = "0.6.0"
+TOOL_VERSION = "0.6.1"
 SPEC_SNAPSHOT_DATE = "2026-08-29"
 
 MAX_PLUGIN_NAME = 64

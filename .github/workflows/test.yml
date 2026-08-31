@@ -50,7 +50,7 @@ jobs:
 
       - name: Verify installed wheel and CLI
         run: |
-          python -c "import agent_skill_to_plugin; assert agent_skill_to_plugin.TOOL_VERSION == '0.6.0'"
+          python -c "import agent_skill_to_plugin; assert agent_skill_to_plugin.TOOL_VERSION == '0.6.1'"
           agent-skill-to-plugin --version
 
       - name: Verify deterministic Skill archive (internal only)

@@ -60,7 +60,7 @@ For `plugin@marketplace`, resolution follows this order:
 
 1. an accompanying `/plugin marketplace add` or `claude plugin marketplace add` source;
 2. `claude plugin marketplace list --json`, read-only and only when a directly executable Claude CLI is available;
-3. the built-in known Marketplace map (`claude-plugins-official` in 0.6.0);
+3. the built-in known Marketplace map (`claude-plugins-official` in 0.6.1);
 4. a bounded public GitHub code search; every candidate is fetched and its `.claude-plugin/marketplace.json` must match both the Marketplace and Plugin names; and
 5. `needs_input` asking for a repository or URL.
 

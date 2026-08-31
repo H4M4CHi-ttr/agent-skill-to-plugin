@@ -92,7 +92,7 @@ The generated artifact is intentionally skills-only:
 
 Safe source-relative files inside a selected Skill are preserved. Validated external references can be copied into a stable plugin-relative location and are recorded in the report. Detected license/notice files may be included under `THIRD_PARTY_LICENSES/` with their origin recorded.
 
-Packaging normalizes a `...` front-matter closer to `---`. When source front matter contains `disable-model-invocation: true`, it changes only the generated front-matter value to `false` and expresses the source intent as `policy.allow_implicit_invocation: false` in `agents/openai.yaml`. Existing agent metadata is filtered through the tool's conservative 0.6.0 allowlist; default prompts must mention `$skill-name`, icon paths must resolve within the Plugin, and changed field paths are reported without their values. These are mechanical, reportable format adaptations, not semantic rewrites of the Skill instructions. Runtime invocation behavior remains product-surface and version dependent.
+Packaging normalizes a `...` front-matter closer to `---`. When source front matter contains `disable-model-invocation: true`, it changes only the generated front-matter value to `false` and expresses the source intent as `policy.allow_implicit_invocation: false` in `agents/openai.yaml`. Existing agent metadata is filtered through the tool's conservative 0.6.1 allowlist; default prompts must mention `$skill-name`, icon paths must resolve within the Plugin, and changed field paths are reported without their values. These are mechanical, reportable format adaptations, not semantic rewrites of the Skill instructions. Runtime invocation behavior remains product-surface and version dependent.
 
 ## Extension points
 
@@ -118,4 +118,4 @@ A new source must not bypass the common discovery, validation, selection, and pa
 - standalone `register-personal` retry behavior
 - legacy `pluginize.py` arguments while the compatibility wrapper is supported
 
-Version 0.6.0 is beta, so changes are possible, but intentional migration notes and regression tests are required.
+Version 0.6.1 is beta, so changes are possible, but intentional migration notes and regression tests are required.
